@@ -1,4 +1,4 @@
-# Welcome to My Portfolio Hello!
+# Welcome to My Portfolio
 My name is Mr. Warburton.
 ## Projects
 - Project 1: Description
