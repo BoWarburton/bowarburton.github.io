@@ -1,7 +1,7 @@
 # Welcome to My Portfolio
 My name is Mr. Warburton.
 ## Projects
-- Project 1: A tank game I wrote using pygame
+- [Project 1: Retro Tank Shooter](game.md)
 - Project 2: Description
 ## About Me
 Click here to learn more → [About Me](about.md)
