@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lily Pad Leap - Molecular Chemistry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@600;700;800&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            user-select: none;
+        }
+
+        .font-game {
+            font-family: 'Fredoka', cursive;
+        }
+
+        /* Glassmorphism styling */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .option-btn {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 10px 20px -5px rgba(52, 211, 153, 0.4);
+        }
+
+        .option-btn:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        .shake-anim {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes floatClover {
+            0% { transform: translateY(0px) rotate(0deg) scale(0.8); opacity: 0; }
+            50% { opacity: 1; transform: translateY(-40px) rotate(180deg) scale(1.3); }
+            100% { transform: translateY(-80px) rotate(360deg) scale(0.9); opacity: 0; }
+        }
+
+        .floating-clover {
+            position: absolute;
+            animation: floatClover 1.8s forwards ease-out;
+            pointer-events: none;
+            color: #34d399;
+            font-size: 2.5rem;
+            filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.8));
+        }
+
+        /* Canvas Overlay Styles */
+        #pondCanvas {
+            border-radius: 1.5rem;
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6), 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between p-2 md:p-4 min-h-screen">
+
+    <header class="w-full max-w-5xl glass-panel rounded-2xl p-4 mb-3 flex flex-wrap items-center justify-between gap-4 z-10 border-emerald-500/30">
+        <div class="flex items-center space-x-3">
+            <div class="bg-emerald-500/20 p-2.5 rounded-xl border border-emerald-400/40 flex items-center justify-center">
+                <i class="fa-solid fa-frog text-2xl text-emerald-400"></i>
+            </div>
+            <div>
+                <h1 class="font-game text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-200">
+                    Lily Pad Leap
+                </h1>
+                <p class="text-xs text-emerald-200/80 font-medium">Molecular Chemistry Challenge</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 sm:gap-6 font-game">
+            <!-- Round Badge -->
+            <div class="bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700 flex items-center gap-2">
+                <i class="fa-solid fa-flag text-amber-400"></i>
+                <span class="text-xs text-slate-400 uppercase tracking-wider hidden sm:inline">Round</span>
+                <span id="roundDisplay" class="text-lg font-bold text-amber-300">1/10</span>
+            </div>
+
+            <!-- Clover Badge -->
+            <div class="bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700 flex items-center gap-2">
+                <i class="fa-solid fa-clover text-emerald-400"></i>
+                <span id="cloverDisplay" class="text-lg font-bold text-emerald-400">0</span>
+            </div>
+
+            <!-- Score Badge -->
+            <div class="bg-emerald-950/80 border border-emerald-500/40 px-4 py-1.5 rounded-xl flex items-center gap-2 shadow-inner">
+                <i class="fa-solid fa-trophy text-yellow-400 text-lg"></i>
+                <div>
+                    <span class="text-[10px] text-emerald-300 uppercase tracking-wider block -mb-1">Score</span>
+                    <span id="scoreDisplay" class="text-xl font-extrabold text-white">0</span>
+                </div>
+            </div>
+
+            <!-- Audio Toggle Button -->
+            <button id="audioBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2.5 rounded-xl border border-slate-700 transition">
+                <i id="audioIcon" class="fa-solid fa-volume-high"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="w-full max-w-5xl flex-1 flex flex-col gap-4 relative z-10 justify-center">
+        
+        <!-- Interactive Canvas Pond -->
+        <div class="relative w-full overflow-hidden rounded-2xl glass-panel p-2">
+            <canvas id="pondCanvas" class="w-full h-48 sm:h-56 md:h-64 block bg-gradient-to-b from-teal-900 to-slate-900"></canvas>
+            <div id="cloverContainer" class="absolute inset-0 pointer-events-none"></div>
+        </div>
+
+        <!-- Molecular Question Panel -->
+        <div id="gameCard" class="glass-panel rounded-2xl p-4 sm:p-6 transition-all duration-300 flex flex-col md:flex-row gap-6 items-center">
+            
+            <!-- Left Column: Molecule Info & Visual Diagram -->
+            <div class="w-full md:w-5/12 flex flex-col items-center bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 relative">
+                <div class="text-center mb-2">
+                    <span id="moleculeCategory" class="text-xs uppercase tracking-widest text-emerald-400 font-bold">Compound</span>
+                    <h2 id="moleculeName" class="font-game text-2xl sm:text-3xl font-extrabold text-white tracking-wide">Water</h2>
+                    <div id="moleculeFormula" class="font-game text-xl text-teal-300 font-semibold mt-0.5">H₂O</div>
+                </div>
+
+                <!-- 2D Canvas Atom Diagram Visualizer -->
+                <div class="w-full h-36 relative flex items-center justify-center my-1 bg-slate-950/50 rounded-lg border border-slate-800/80 overflow-hidden">
+                    <canvas id="moleculeCanvas" class="w-full h-full"></canvas>
+                </div>
+
+                <!-- Atomic Legend -->
+                <div id="atomLegend" class="flex flex-wrap justify-center gap-2 mt-2 text-xs">
+                    <!-- Dynamic legend items injected here -->
+                </div>
+            </div>
+
+            <!-- Right Column: Question & Multiple Choice Options -->
+            <div class="w-full md:w-7/12 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-base sm:text-lg font-bold text-slate-100 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-question text-teal-400"></i>
+                        Identify the Atomic Composition:
+                    </h3>
+                    <p class="text-xs sm:text-sm text-slate-300 mb-4">
+                        Select the correct breakdown of atoms that form one molecule of <span id="questionMolName" class="text-emerald-300 font-semibold">Water</span>:
+                    </p>
+                </div>
+
+                <!-- Options Grid -->
+                <div id="optionsContainer" class="grid grid-cols-1 gap-2.5 sm:gap-3">
+                    <!-- Option Buttons Injected via JS -->
+                </div>
+
+                <!-- Feedback Message / Explanation -->
+                <div id="feedbackBox" class="mt-3 p-3 rounded-xl hidden text-xs sm:text-sm font-semibold flex items-start gap-2.5 transition-all">
+                    <i id="feedbackIcon" class="fa-solid text-base mt-0.5"></i>
+                    <div id="feedbackText" class="flex-1"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="endModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+        <div class="glass-panel max-w-md w-full rounded-3xl p-6 sm:p-8 text-center border-2 border-emerald-500/50 shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl"></div>
+            
+            <div class="w-20 h-20 bg-gradient-to-tr from-emerald-500 to-teal-300 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/30">
+                <i id="endBadgeIcon" class="fa-solid fa-trophy text-4xl text-slate-950"></i>
+            </div>
+
+            <h2 id="endTitle" class="font-game text-3xl font-extrabold text-white mb-1">Pond Explorer!</h2>
+            <p id="endSubtitle" class="text-slate-300 text-sm mb-6">You've successfully crossed the chemical pond!</p>
+
+            <!-- Final Stats Grid -->
+            <div class="grid grid-cols-2 gap-3 mb-6 font-game">
+                <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-700">
+                    <span class="text-xs text-slate-400 block mb-1">Final Score</span>
+                    <span id="finalScore" class="text-2xl font-bold text-amber-300">100</span>
+                    <span class="text-xs text-slate-500">/ 100</span>
+                </div>
+                <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-700">
+                    <span class="text-xs text-slate-400 block mb-1">Clovers Collected</span>
+                    <span id="finalClovers" class="text-2xl font-bold text-emerald-400">10</span>
+                    <span class="text-xs text-slate-500">🍀</span>
+                </div>
+            </div>
+
+            <div id="cloverRating" class="flex justify-center gap-2 text-2xl text-emerald-400 mb-6">
+                <!-- Clover Icons dynamically inserted -->
+            </div>
+
+            <button id="restartBtn" class="w-full py-3.5 px-6 rounded-xl font-game font-bold text-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/30 transition transform active:scale-95 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> Play Again
+            </button>
+        </div>
+    </div>
+
+    <footer class="mt-4 text-xs text-slate-400 text-center font-medium">
+        High School Chemistry Learning Module • Lily Pad Leap Game
+    </footer>
+
+    <script>
+        const CHEMISTRY_ROUNDS = [
+            {
+                round: 1,
+                name: "Water",
+                formula: "H₂O",
+                category: "Essential Solvent",
+                correct: { H: 2, O: 1 },
+                options: [
+                    "2 Hydrogen, 1 Oxygen",
+                    "1 Hydrogen, 2 Oxygen",
+                    "2 Hydrogen, 2 Oxygen",
+                    "3 Hydrogen, 1 Oxygen"
+                ],
+                correctIndex: 0,
+                fact: "Water is known as the 'universal solvent' because it dissolves more substances than any other liquid!"
+            },
+            {
+                round: 2,
+                name: "Carbon Dioxide",
+                formula: "CO₂",
+                category: "Atmospheric Gas",
+                correct: { C: 1, O: 2 },
+                options: [
+                    "2 Carbon, 1 Oxygen",
+                    "1 Carbon, 2 Oxygen",
+                    "1 Carbon, 1 Oxygen",
+                    "2 Carbon, 2 Oxygen"
+                ],
+                correctIndex: 1,
+                fact: "Plants use Carbon Dioxide during photosynthesis to create oxygen and glucose!"
+            },
+            {
+                round: 3,
+                name: "Methane",
+                formula: "CH₄",
+                category: "Hydrocarbon Gas",
+                correct: { C: 1, H: 4 },
+                options: [
+                    "4 Carbon, 1 Hydrogen",
+                    "2 Carbon, 4 Hydrogen",
+                    "1 Carbon, 4 Hydrogen",
+                    "1 Carbon, 3 Hydrogen"
+                ],
+                correctIndex: 2,
+                fact: "Methane is the main constituent of natural gas and a key hydrocarbon!"
+            },
+            {
+                round: 4,
+                name: "Ammonia",
+                formula: "NH₃",
+                category: "Nitrogen Compound",
+                correct: { N: 1, H: 3 },
+                options: [
+                    "1 Nitrogen, 3 Hydrogen",
+                    "3 Nitrogen, 1 Hydrogen",
+                    "1 Nitrogen, 4 Hydrogen",
+                    "2 Nitrogen, 3 Hydrogen"
+                ],
+                correctIndex: 0,
+                fact: "Ammonia is a pungent compound crucial in agricultural fertilizers."
+            },
+            {
+                round: 5,
+                name: "Ozone",
+                formula: "O₃",
+                category: "Elemental Allotrope",
+                correct: { O: 3 },
+                options: [
+                    "2 Oxygen",
+                    "3 Oxygen",
+                    "4 Oxygen",
+                    "1 Oxygen, 2 Ozone"
+                ],
+                correctIndex: 1,
+                fact: "Ozone in the stratosphere shields the Earth from harmful ultraviolet radiation!"
+            },
+            {
+                round: 6,
+                name: "Glucose",
+                formula: "C₆H₁₂O₆",
+                category: "Simple Sugar",
+                correct: { C: 6, H: 12, O: 6 },
+                options: [
+                    "6 Carbon, 6 Hydrogen, 6 Oxygen",
+                    "12 Carbon, 6 Hydrogen, 6 Oxygen",
+                    "6 Carbon, 12 Hydrogen, 6 Oxygen",
+                    "8 Carbon, 10 Hydrogen, 4 Oxygen"
+                ],
+                correctIndex: 2,
+                fact: "Glucose is the primary source of energy for cellular respiration in living organisms!"
+            },
+            {
+                round: 7,
+                name: "Sulfuric Acid",
+                formula: "H₂SO₄",
+                category: "Mineral Acid",
+                correct: { H: 2, S: 1, O: 4 },
+                options: [
+                    "2 Hydrogen, 1 Sulfur, 4 Oxygen",
+                    "1 Hydrogen, 2 Sulfur, 4 Oxygen",
+                    "2 Hydrogen, 2 Sulfur, 3 Oxygen",
+                    "4 Hydrogen, 1 Sulfur, 2 Oxygen"
+                ],
+                correctIndex: 0,
+                fact: "Sulfuric Acid is a strong acid heavily used in industrial chemical synthesis and car batteries!"
+            },
+            {
+                round: 8,
+                name: "Ethanol",
+                formula: "C₂H₅OH",
+                category: "Alcohol Group",
+                correct: { C: 2, H: 6, O: 1 },
+                options: [
+                    "2 Carbon, 5 Hydrogen, 2 Oxygen",
+                    "2 Carbon, 6 Hydrogen, 1 Oxygen",
+                    "1 Carbon, 6 Hydrogen, 2 Oxygen",
+                    "3 Carbon, 6 Hydrogen, 1 Oxygen"
+                ],
+                correctIndex: 1,
+                fact: "Ethanol contains a hydroxyl (-OH) group bonded to a two-carbon ethyl chain."
+            },
+            {
+                round: 9,
+                name: "Caffeine",
+                formula: "C₈H₁₀N₄O₂",
+                category: "Alkaloid Stimulant",
+                correct: { C: 8, H: 10, N: 4, O: 2 },
+                options: [
+                    "8 Carbon, 8 Hydrogen, 4 Nitrogen, 2 Oxygen",
+                    "10 Carbon, 8 Hydrogen, 2 Nitrogen, 4 Oxygen",
+                    "8 Carbon, 10 Hydrogen, 4 Nitrogen, 2 Oxygen",
+                    "6 Carbon, 12 Hydrogen, 4 Nitrogen, 2 Oxygen"
+                ],
+                correctIndex: 2,
+                fact: "Caffeine acts as a natural central nervous system stimulant in coffee beans and tea leaves!"
+            },
+            {
+                round: 10,
+                name: "Sodium Chloride",
+                formula: "NaCl",
+                category: "Ionic Crystal",
+                correct: { Na: 1, Cl: 1 },
+                options: [
+                    "1 Nitrogen, 1 Chlorine",
+                    "1 Sodium, 1 Chlorine",
+                    "2 Sodium, 1 Chlorine",
+                    "1 Sodium, 2 Chlorine"
+                ],
+                correctIndex: 1,
+                fact: "Common table salt forms an ionic lattice structure consisting of equal parts Sodium and Chlorine ions!"
+            }
+        ];
+
+        /* Atom Color Map CPK Standards */
+        const ATOM_COLORS = {
+            H:  { bg: '#f8fafc', border: '#cbd5e1', name: 'Hydrogen' },
+            O:  { bg: '#ef4444', border: '#b91c1c', name: 'Oxygen' },
+            C:  { bg: '#334155', border: '#0f172a', name: 'Carbon' },
+            N:  { bg: '#3b82f6', border: '#1d4ed8', name: 'Nitrogen' },
+            S:  { bg: '#eab308', border: '#ca8a04', name: 'Sulfur' },
+            Na: { bg: '#a855f7', border: '#7e22ce', name: 'Sodium' },
+            Cl: { bg: '#22c55e', border: '#15803d', name: 'Chlorine' }
+        };
+
+        let currentRound = 0;
+        let score = 0;
+        let clovers = 0;
+        let audioMuted = false;
+        let canAnswer = true;
+
+        /* Canvas & Frog Animation State */
+        let pondCanvas, ctx;
+        let frogState = {
+            currentPad: 0,
+            targetPad: 0,
+            x: 0,
+            y: 0,
+            progress: 1, // 1 means at rest
+            startX: 0,
+            startY: 0,
+            endX: 0,
+            endY: 0,
+            arcHeight: 50
+        };
+
+        let lilyPads = [];
+        let ripples = [];
+
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) this.ctx = new AudioContext();
+                }
+            }
+
+            playLeap() {
+                if (audioMuted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(580, this.ctx.currentTime + 0.25);
+                
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playCorrect() {
+                if (audioMuted || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.2);
+                });
+            }
+
+            playWrong() {
+                if (audioMuted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(110, this.ctx.currentTime + 0.3);
+                
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playSplash() {
+                if (audioMuted || !this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * 0.15;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, this.ctx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.15);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start();
+            }
+        }
+
+        const soundFX = new SoundFX();
+
+        function initPondCanvas() {
+            pondCanvas = document.getElementById('pondCanvas');
+            ctx = pondCanvas.getContext('2d');
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            requestAnimationFrame(animatePond);
+        }
+
+        function resizeCanvas() {
+            const rect = pondCanvas.getBoundingClientRect();
+            pondCanvas.width = rect.width * window.devicePixelRatio;
+            pondCanvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            calculateLilyPadPositions();
+        }
+
+        function calculateLilyPadPositions() {
+            const width = pondCanvas.getBoundingClientRect().width;
+            const height = pondCanvas.getBoundingClientRect().height;
+            lilyPads = [];
+
+            // 10 Lily pads arranged in a serpentine path across the pond
+            const padRadius = Math.min(width / 24, 22);
+            const totalPads = 10;
+
+            for (let i = 0; i < totalPads; i++) {
+                const fraction = i / (totalPads - 1);
+                const x = padRadius + 20 + fraction * (width - padRadius * 2 - 40);
+                // Gentle serpentine sine wave path
+                const y = (height / 2) + Math.sin(i * 1.2) * (height * 0.22);
+                
+                lilyPads.push({
+                    x, y, radius: padRadius,
+                    reached: i <= frogState.currentPad
+                });
+            }
+
+            if (frogState.progress === 1) {
+                const currentPos = lilyPads[frogState.currentPad] || lilyPads[0];
+                frogState.x = currentPos.x;
+                frogState.y = currentPos.y - 4;
+            }
+        }
+
+        /* Draw Lily Pad with Realistic Notch */
+        function drawLilyPad(pad, index) {
+            ctx.save();
+            ctx.translate(pad.x, pad.y);
+
+            // Pad Shadow
+            ctx.beginPath();
+            ctx.ellipse(0, 6, pad.radius * 1.1, pad.radius * 0.7, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(2, 44, 34, 0.4)';
+            ctx.fill();
+
+            // Pad Body
+            ctx.beginPath();
+            const notchAngle = 0.4;
+            ctx.arc(0, 0, pad.radius, notchAngle, Math.PI * 2 - notchAngle);
+            ctx.lineTo(0, 0);
+            ctx.closePath();
+
+            // Active/Reached state color gradient
+            const grad = ctx.createRadialGradient(0, 0, 2, 0, 0, pad.radius);
+            if (index === frogState.currentPad) {
+                grad.addColorStop(0, '#34d399');
+                grad.addColorStop(1, '#059669');
+            } else if (pad.reached) {
+                grad.addColorStop(0, '#10b981');
+                grad.addColorStop(1, '#047857');
+            } else {
+                grad.addColorStop(0, '#065f46');
+                grad.addColorStop(1, '#022c22');
+            }
+
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = index === frogState.currentPad ? '#a7f3d0' : '#047857';
+            ctx.stroke();
+
+            // Number Label on Lily Pad
+            ctx.fillStyle = pad.reached ? '#f0fdf4' : '#6ee7b7';
+            ctx.font = 'bold 11px Fredoka, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(index + 1, 0, 1);
+
+            ctx.restore();
+        }
+
+        /* Draw Vector Frog Character */
+        function drawFrog(x, y, isLeaping) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            // Frog Shadow
+            ctx.beginPath();
+            ctx.ellipse(0, 10, isLeaping ? 16 : 12, isLeaping ? 6 : 8, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fill();
+
+            // Legs
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            if (isLeaping) {
+                // Extended legs during jump
+                ctx.ellipse(-14, 8, 10, 4, -Math.PI / 6, 0, Math.PI * 2);
+                ctx.ellipse(14, 8, 10, 4, Math.PI / 6, 0, Math.PI * 2);
+            } else {
+                // Resting folded legs
+                ctx.ellipse(-10, 4, 7, 5, Math.PI / 4, 0, Math.PI * 2);
+                ctx.ellipse(10, 4, 7, 5, -Math.PI / 4, 0, Math.PI * 2);
+            }
+            ctx.fill();
+
+            // Body
+            ctx.beginPath();
+            ctx.ellipse(0, -2, 12, 10, 0, 0, Math.PI * 2);
+            const bodyGrad = ctx.createRadialGradient(0, -4, 2, 0, 0, 12);
+            bodyGrad.addColorStop(0, '#6ee7b7');
+            bodyGrad.addColorStop(1, '#059669');
+            ctx.fillStyle = bodyGrad;
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-5, -10, 4.5, 0, Math.PI * 2);
+            ctx.arc(5, -10, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(-5, -10, 2, 0, Math.PI * 2);
+            ctx.arc(5, -10, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Smile
+            ctx.beginPath();
+            ctx.arc(0, -2, 4, 0.1 * Math.PI, 0.9 * Math.PI);
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#064e3b';
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        /* Water Ripples Animation */
+        function addRipple(x, y) {
+            ripples.push({ x, y, radius: 4, maxRadius: 28, alpha: 0.8 });
+        }
+
+        function drawRipples() {
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                const r = ripples[i];
+                ctx.beginPath();
+                ctx.ellipse(r.x, r.y, r.radius, r.radius * 0.5, 0, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(110, 231, 183, ${r.alpha})`;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                r.radius += 0.8;
+                r.alpha -= 0.025;
+
+                if (r.alpha <= 0) ripples.splice(i, 1);
+            }
+        }
+
+        function animatePond() {
+            const width = pondCanvas.getBoundingClientRect().width;
+            const height = pondCanvas.getBoundingClientRect().height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw Background Water Ripples
+            drawRipples();
+
+            // Draw Lily Pads
+            lilyPads.forEach((pad, idx) => drawLilyPad(pad, idx));
+
+            // Update & Draw Frog Position (Parabolic Curve on Leap)
+            if (frogState.progress < 1) {
+                frogState.progress += 0.035; // Leap speed
+                if (frogState.progress >= 1) {
+                    frogState.progress = 1;
+                    frogState.currentPad = frogState.targetPad;
+                    frogState.x = frogState.endX;
+                    frogState.y = frogState.endY;
+                    soundFX.playSplash();
+                    addRipple(frogState.endX, frogState.endY + 6);
+                } else {
+                    // Quadratic Bezier interpolation for realistic jump arc
+                    const t = frogState.progress;
+                    const p0X = frogState.startX;
+                    const p0Y = frogState.startY;
+                    const p2X = frogState.endX;
+                    const p2Y = frogState.endY;
+                    
+                    // Arc apex point
+                    const p1X = (p0X + p2X) / 2;
+                    const p1Y = Math.min(p0Y, p2Y) - frogState.arcHeight;
+
+                    frogState.x = (1 - t) * (1 - t) * p0X + 2 * (1 - t) * t * p1X + t * t * p2X;
+                    frogState.y = (1 - t) * (1 - t) * p0Y + 2 * (1 - t) * t * p1Y + t * t * p2Y;
+                }
+            }
+
+            drawFrog(frogState.x, frogState.y, frogState.progress < 1);
+
+            requestAnimationFrame(animatePond);
+        }
+
+        function triggerFrogLeap(targetIndex) {
+            if (targetIndex >= lilyPads.length) return;
+            soundFX.playLeap();
+            addRipple(frogState.x, frogState.y + 6);
+
+            const startPad = lilyPads[frogState.currentPad];
+            const endPad = lilyPads[targetIndex];
+
+            frogState.targetPad = targetIndex;
+            frogState.startX = startPad.x;
+            frogState.startY = startPad.y - 4;
+            frogState.endX = endPad.x;
+            frogState.endY = endPad.y - 4;
+            frogState.progress = 0;
+            frogState.arcHeight = Math.max(45, Math.abs(endPad.x - startPad.x) * 0.4);
+
+            lilyPads[targetIndex].reached = true;
+        }
+
+        function renderMolecule(chemData) {
+            const canvas = document.getElementById('moleculeCanvas');
+            const mCtx = canvas.getContext('2d');
+            
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            mCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            const w = canvas.offsetWidth;
+            const h = canvas.offsetHeight;
+            mCtx.clearRect(0, 0, w, h);
+
+            // Construct Atomic Nodes for Visual Diagram
+            const atoms = [];
+            const bonds = [];
+            const formula = chemData.correct;
+
+            // Generate spatial node positions based on molecular structure type
+            const keys = Object.keys(formula);
+            let atomId = 0;
+
+            if (chemData.name === "Water") { // H2O
+                atoms.push({ id: 0, type: 'O', x: w/2, y: h/2 - 5, r: 18 });
+                atoms.push({ id: 1, type: 'H', x: w/2 - 35, y: h/2 + 25, r: 12 });
+                atoms.push({ id: 2, type: 'H', x: w/2 + 35, y: h/2 + 25, r: 12 });
+                bonds.push([0, 1], [0, 2]);
+            } 
+            else if (chemData.name === "Carbon Dioxide") { // CO2
+                atoms.push({ id: 0, type: 'C', x: w/2, y: h/2, r: 16 });
+                atoms.push({ id: 1, type: 'O', x: w/2 - 50, y: h/2, r: 16 });
+                atoms.push({ id: 2, type: 'O', x: w/2 + 50, y: h/2, r: 16 });
+                bonds.push([0, 1], [0, 2]); // Double bond visual
+            }
+            else if (chemData.name === "Methane") { // CH4
+                atoms.push({ id: 0, type: 'C', x: w/2, y: h/2, r: 18 });
+                atoms.push({ id: 1, type: 'H', x: w/2, y: h/2 - 38, r: 11 });
+                atoms.push({ id: 2, type: 'H', x: w/2 + 38, y: h/2, r: 11 });
+                atoms.push({ id: 3, type: 'H', x: w/2, y: h/2 + 38, r: 11 });
+                atoms.push({ id: 4, type: 'H', x: w/2 - 38, y: h/2, r: 11 });
+                bonds.push([0, 1], [0, 2], [0, 3], [0, 4]);
+            }
+            else if (chemData.name === "Ammonia") { // NH3
+                atoms.push({ id: 0, type: 'N', x: w/2, y: h/2 - 10, r: 17 });
+                atoms.push({ id: 1, type: 'H', x: w/2 - 35, y: h/2 + 25, r: 11 });
+                atoms.push({ id: 2, type: 'H', x: w/2, y: h/2 + 32, r: 11 });
+                atoms.push({ id: 3, type: 'H', x: w/2 + 35, y: h/2 + 25, r: 11 });
+                bonds.push([0, 1], [0, 2], [0, 3]);
+            }
+            else if (chemData.name === "Ozone") { // O3
+                atoms.push({ id: 0, type: 'O', x: w/2, y: h/2 - 20, r: 16 });
+                atoms.push({ id: 1, type: 'O', x: w/2 - 35, y: h/2 + 20, r: 16 });
+                atoms.push({ id: 2, type: 'O', x: w/2 + 35, y: h/2 + 20, r: 16 });
+                bonds.push([0, 1], [1, 2]);
+            }
+            else { 
+                // Generalized radial cluster representation for complex molecules
+                let centerElem = keys.find(k => k === 'C' || k === 'S' || k === 'N') || keys[0];
+                atoms.push({ id: 0, type: centerElem, x: w/2, y: h/2, r: 18 });
+                
+                let angle = 0;
+                let otherAtoms = [];
+                keys.forEach(k => {
+                    let count = formula[k];
+                    if (k === centerElem) count--; // account for center
+                    for(let i=0; i<count; i++) otherAtoms.push(k);
+                });
+
+                const maxDisplay = Math.min(otherAtoms.length, 8);
+                const step = (Math.PI * 2) / maxDisplay;
+                for (let i = 0; i < maxDisplay; i++) {
+                    const dist = 36 + (i % 2) * 8;
+                    const ax = w/2 + Math.cos(angle) * dist;
+                    const ay = h/2 + Math.sin(angle) * dist;
+                    atoms.push({ id: i+1, type: otherAtoms[i], x: ax, y: ay, r: otherAtoms[i] === 'H' ? 10 : 14 });
+                    bonds.push([0, i+1]);
+                    angle += step;
+                }
+            }
+
+            // Draw Bonds
+            bonds.forEach(([i1, i2]) => {
+                const a1 = atoms[i1];
+                const a2 = atoms[i2];
+                mCtx.beginPath();
+                mCtx.moveTo(a1.x, a1.y);
+                mCtx.lineTo(a2.x, a2.y);
+                mCtx.strokeStyle = 'rgba(148, 163, 184, 0.6)';
+                mCtx.lineWidth = 3.5;
+                mCtx.stroke();
+            });
+
+            // Draw Atom Nodes
+            atoms.forEach(atom => {
+                const style = ATOM_COLORS[atom.type] || { bg: '#94a3b8', border: '#475569' };
+                mCtx.beginPath();
+                mCtx.arc(atom.x, atom.y, atom.r, 0, Math.PI * 2);
+                mCtx.fillStyle = style.bg;
+                mCtx.fill();
+                mCtx.lineWidth = 2;
+                mCtx.strokeStyle = style.border;
+                mCtx.stroke();
+
+                // Atom Chemical Symbol Text
+                mCtx.fillStyle = (atom.type === 'H') ? '#0f172a' : '#ffffff';
+                mCtx.font = `bold ${atom.r * 0.95}px Fredoka, sans-serif`;
+                mCtx.textAlign = 'center';
+                mCtx.textBaseline = 'middle';
+                mCtx.fillText(atom.type, atom.x, atom.y + 1);
+            });
+
+            // Update Dynamic Legend UI
+            const legendBox = document.getElementById('atomLegend');
+            legendBox.innerHTML = '';
+            keys.forEach(elem => {
+                const info = ATOM_COLORS[elem];
+                if (!info) return;
+                const badge = document.createElement('div');
+                badge.className = 'flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700';
+                badge.innerHTML = `
+                    <span class="w-3 h-3 rounded-full border" style="background-color: ${info.bg}; border-color: ${info.border}"></span>
+                    <span class="text-slate-200 font-semibold text-[11px]">${info.name} (${elem})</span>
+                `;
+                legendBox.appendChild(badge);
+            });
+        }
+
+        function loadRound(roundIdx) {
+            canAnswer = true;
+            const data = CHEMISTRY_ROUNDS[roundIdx];
+
+            // Header Displays
+            document.getElementById('roundDisplay').innerText = `${roundIdx + 1}/10`;
+            document.getElementById('scoreDisplay').innerText = score;
+            document.getElementById('cloverDisplay').innerText = clovers;
+
+            // Molecule Details
+            document.getElementById('moleculeCategory').innerText = data.category;
+            document.getElementById('moleculeName').innerText = data.name;
+            document.getElementById('moleculeFormula').innerText = data.formula;
+            document.getElementById('questionMolName').innerText = data.name;
+
+            // Hide Feedback Box
+            const feedback = document.getElementById('feedbackBox');
+            feedback.classList.add('hidden');
+
+            // Render Chemistry Diagram Canvas
+            renderMolecule(data);
+
+            // Populate Multiple Choice Options
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+
+            data.options.forEach((optionText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn w-full text-left p-3.5 sm:p-4 rounded-xl glass-panel border border-slate-700 hover:border-emerald-400/60 font-semibold text-slate-200 text-xs sm:text-sm flex items-center justify-between group';
+                btn.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-lg bg-slate-800 group-hover:bg-emerald-500/20 text-slate-400 group-hover:text-emerald-300 font-game flex items-center justify-center text-xs border border-slate-700 transition">
+                            ${String.fromCharCode(65 + idx)}
+                        </span>
+                        <span>${optionText}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-emerald-400 transition text-xs"></i>
+                `;
+
+                btn.addEventListener('click', () => handleAnswerSelect(idx, btn));
+                container.appendChild(btn);
+            });
+        }
+
+        /* Floating Clover Particle Effect */
+        function spawnCloverEffect() {
+            const container = document.getElementById('cloverContainer');
+            const clover = document.createElement('div');
+            clover.className = 'floating-clover';
+            clover.innerHTML = '<i class="fa-solid fa-clover"></i>';
+            clover.style.left = `${frogState.x}px`;
+            clover.style.top = `${frogState.y - 20}px`;
+
+            container.appendChild(clover);
+            setTimeout(() => clover.remove(), 1800);
+        }
+
+        function handleAnswerSelect(optionIndex, selectedBtn) {
+            if (!canAnswer) return;
+            canAnswer = false;
+
+            soundFX.init(); // Initialize audio context on first user click
+            const currentData = CHEMISTRY_ROUNDS[currentRound];
+            const isCorrect = (optionIndex === currentData.correctIndex);
+
+            const feedback = document.getElementById('feedbackBox');
+            const feedbackIcon = document.getElementById('feedbackIcon');
+            const feedbackText = document.getElementById('feedbackText');
+            feedback.classList.remove('hidden', 'bg-emerald-950/80', 'border-emerald-500/50', 'text-emerald-200', 'bg-rose-950/80', 'border-rose-500/50', 'text-rose-200');
+
+            // Disable all option buttons
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => b.disabled = true);
+
+            if (isCorrect) {
+                // Correct Answer Logic
+                score += 10;
+                clovers += 1;
+                soundFX.playCorrect();
+
+                selectedBtn.classList.add('bg-emerald-600/30', 'border-emerald-400', 'text-emerald-200');
+                
+                feedback.classList.add('bg-emerald-950/80', 'border', 'border-emerald-500/50', 'text-emerald-200');
+                feedbackIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+                feedbackText.innerHTML = `<strong>Correct leap! +10 Points! 🍀</strong><br><span class="text-xs opacity-90">${currentData.fact}</span>`;
+
+                // Trigger Frog Leap & Clover Spawns
+                triggerFrogLeap(currentRound + 1);
+                spawnCloverEffect();
+
+                // Update Header UI
+                document.getElementById('scoreDisplay').innerText = score;
+                document.getElementById('cloverDisplay').innerText = clovers;
+
+                // Advance to next round or finish game after delay
+                setTimeout(() => {
+                    currentRound++;
+                    if (currentRound < CHEMISTRY_ROUNDS.length) {
+                        loadRound(currentRound);
+                    } else {
+                        showEndModal();
+                    }
+                }, 2200);
+
+            } else {
+                // Incorrect Answer Logic
+                soundFX.playWrong();
+                selectedBtn.classList.add('bg-rose-600/30', 'border-rose-500', 'text-rose-200', 'shake-anim');
+
+                // Highlight actual correct button gently
+                allBtns[currentData.correctIndex].classList.add('bg-emerald-950/40', 'border-emerald-500/60');
+
+                feedback.classList.add('bg-rose-950/80', 'border', 'border-rose-500/50', 'text-rose-200');
+                feedbackIcon.className = 'fa-solid fa-circle-xmark text-rose-400 text-lg';
+                feedbackText.innerHTML = `<strong>Not quite!</strong> The correct composition for <strong>${currentData.name} (${currentData.formula})</strong> is option <em>${String.fromCharCode(65 + currentData.correctIndex)}</em>.<br><span class="text-xs opacity-90">${currentData.fact}</span>`;
+
+                // Allow user to proceed after reviewing correct answer
+                setTimeout(() => {
+                    currentRound++;
+                    if (currentRound < CHEMISTRY_ROUNDS.length) {
+                        loadRound(currentRound);
+                    } else {
+                        showEndModal();
+                    }
+                }, 3000);
+            }
+        }
+
+        function showEndModal() {
+            const modal = document.getElementById('endModal');
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('finalClovers').innerText = clovers;
+
+            const ratingBox = document.getElementById('cloverRating');
+            ratingBox.innerHTML = '';
+
+            // Rating Stars/Clovers based on score
+            const cloversEarned = Math.round((score / 100) * 5);
+            for (let i = 0; i < 5; i++) {
+                const icon = document.createElement('i');
+                if (i < cloversEarned) {
+                    icon.className = 'fa-solid fa-clover text-emerald-400';
+                } else {
+                    icon.className = 'fa-solid fa-clover text-slate-700';
+                }
+                ratingBox.appendChild(icon);
+            }
+
+            // Custom end titles
+            const title = document.getElementById('endTitle');
+            const subtitle = document.getElementById('endSubtitle');
+
+            if (score === 100) {
+                title.innerText = "Master Chemist!";
+                subtitle.innerText = "Flawless leap across the molecular pond!";
+            } else if (score >= 70) {
+                title.innerText = "Pond Explorer!";
+                subtitle.innerText = "Great job identifying molecular structures!";
+            } else {
+                title.innerText = "Chemistry Novice!";
+                subtitle.innerText = "Keep practicing your periodic breakdowns and leap again!";
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function resetGame() {
+            currentRound = 0;
+            score = 0;
+            clovers = 0;
+            frogState.currentPad = 0;
+            frogState.targetPad = 0;
+            frogState.progress = 1;
+
+            if (lilyPads.length > 0) {
+                lilyPads.forEach((pad, i) => pad.reached = i === 0);
+                frogState.x = lilyPads[0].x;
+                frogState.y = lilyPads[0].y - 4;
+            }
+
+            document.getElementById('endModal').classList.add('hidden');
+            loadRound(currentRound);
+        }
+
+        document.getElementById('restartBtn').addEventListener('click', resetGame);
+
+        // Audio Mute Toggle Listener
+        document.getElementById('audioBtn').addEventListener('click', () => {
+            audioMuted = !audioMuted;
+            const icon = document.getElementById('audioIcon');
+            if (audioMuted) {
+                icon.className = 'fa-solid fa-volume-xmark text-rose-400';
+            } else {
+                icon.className = 'fa-solid fa-volume-high text-emerald-400';
+                soundFX.init();
+            }
+        });
+
+        // Initialize Canvas & Game on DOM Load
+        window.addEventListener('load', () => {
+            initPondCanvas();
+            loadRound(0);
+        });
+    </script>
+</body>
+</html>
