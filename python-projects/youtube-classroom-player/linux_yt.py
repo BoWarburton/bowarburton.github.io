@@ -403,17 +403,35 @@ def read_root():
 
 @yt.get("/help")
 def help():
-  return {"commands": " '/'(GET) '/help'(GET) '/read'(GET) '/url_add'(GET) '/title_add'(GET) '/skip'(GET) '/repeat'(GET) '/volume'(GET) "}
+    return {
+        "student_api": {
+            "challenge": "GET /api/v1/challenge",
+            "hints": "GET /api/v1/hints/{level}",
+            "search": "GET /api/v1/videos/search?q={query}",
+            "queue": "GET /api/v1/queue",
+            "request": "POST /api/v1/requests with JSON {\"video_id\": \"...\"}",
+            "skip_vote": "POST /api/v1/skip-votes",
+        },
+        "legacy_routes": [
+            "GET /title_add?title=... (legacy; adds a title for the player to search)",
+            "GET /url_add?url=... (legacy)",
+            "GET /read, /skip, /repeat, and /volume (legacy)",
+        ],
+    }
 
 @yt.get("/read")
 def get_queue():
   return read_queue()
 
-@yt.get("/title_add")
+@yt.get(
+    "/title_add",
+    deprecated=True,
+    description="Legacy route. Classroom clients should search, then POST a video_id to /api/v1/requests.",
+)
 def add_title(title: str):
     return {"message": add_title_to_queue(title)}
 
-@yt.get("/url_add")
+@yt.get("/url_add", deprecated=True, description="Legacy queue route.")
 def add_url(url: str):
     return {"message": add_url_to_queue(url)}
 

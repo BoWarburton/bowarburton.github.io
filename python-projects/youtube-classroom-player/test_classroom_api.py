@@ -51,6 +51,15 @@ class ClassroomApiTests(unittest.TestCase):
         self.assertIn("Queue Quest", response.text)
         self.assertIn("/api/v1/queue", response.text)
 
+    def test_help_prioritizes_student_api_and_labels_legacy_routes(self):
+        response = self.client.get("/help")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("POST /api/v1/requests", response.json()["student_api"]["request"])
+        self.assertTrue(
+            any("/title_add" in route for route in response.json()["legacy_routes"])
+        )
+
     def test_get_search_returns_video_candidates(self):
         with patch("yt_dlp.YoutubeDL") as youtube_dl:
             youtube = youtube_dl.return_value.__enter__.return_value
