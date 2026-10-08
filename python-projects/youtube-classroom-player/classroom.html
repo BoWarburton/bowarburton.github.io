@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f5ef">
+  <title>Queue Quest | Classroom Music</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f3f5ef;
+      --ink: #1d2928;
+      --muted: #5d6b68;
+      --line: #cbd4cc;
+      --white: #fffefa;
+      --green: #14645b;
+      --green-dark: #10483f;
+      --coral: #c95039;
+      --yellow: #f0c351;
+      --blue: #d9e9e8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: linear-gradient(rgba(29, 41, 40, .045) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(29, 41, 40, .045) 1px, transparent 1px);
+      background-size: 26px 26px;
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      line-height: 1.5;
+    }
+
+    .shell { max-width: 1120px; margin: 0 auto; padding: 28px 28px 48px; }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 4px 0 22px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .eyebrow, .label {
+      margin: 0;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    h1, h2, p { margin-top: 0; }
+    h1 { margin-bottom: 0; font: 700 38px/1.05 Georgia, "Times New Roman", serif; }
+    h2 { margin-bottom: 10px; font: 700 27px/1.15 Georgia, "Times New Roman", serif; }
+
+    a { color: var(--green-dark); }
+    .docs-link { font-size: 14px; font-weight: 700; }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(300px, .88fr);
+      gap: 22px;
+      padding-top: 24px;
+    }
+
+    section {
+      min-width: 0;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-top: 5px solid var(--green);
+      background: var(--white);
+      box-shadow: 4px 4px 0 rgba(29, 41, 40, .08);
+    }
+
+    .mission { border-top-color: var(--coral); }
+    .section-label { display: flex; align-items: center; gap: 9px; margin-bottom: 22px; }
+    .marker { width: 10px; height: 10px; background: var(--yellow); border: 1px solid var(--ink); }
+    .intro { max-width: 56ch; color: var(--muted); }
+
+    .protocol-list { display: grid; gap: 0; margin: 22px 0; border-top: 1px solid var(--line); }
+    .protocol {
+      display: grid;
+      grid-template-columns: 60px 1fr;
+      gap: 14px;
+      align-items: center;
+      min-height: 58px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .verb {
+      width: max-content;
+      padding: 3px 8px;
+      color: var(--white);
+      background: var(--green-dark);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+
+    .protocol:nth-child(2) .verb { background: var(--coral); }
+    .protocol p { margin: 0; font-size: 14px; }
+
+    button {
+      min-height: 42px;
+      padding: 9px 14px;
+      border: 1px solid var(--green-dark);
+      border-radius: 2px;
+      color: white;
+      background: var(--green);
+      font: 700 14px "Trebuchet MS", Verdana, sans-serif;
+      cursor: pointer;
+    }
+
+    button:hover { background: var(--green-dark); }
+    button:focus-visible, a:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+    button:disabled { cursor: default; opacity: .55; }
+
+    .hint-box {
+      min-height: 76px;
+      margin-top: 14px;
+      padding: 13px 15px;
+      border-left: 4px solid var(--yellow);
+      background: #fff7dd;
+      color: var(--ink);
+    }
+
+    .hint-box p { margin: 0; }
+    .hint-count { display: block; margin-bottom: 4px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .status-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .status { color: var(--muted); font-size: 13px; }
+    .refresh { min-height: 34px; padding: 5px 10px; color: var(--green-dark); background: transparent; }
+    .refresh:hover { color: white; }
+
+    .now-playing { margin: 8px 0 20px; padding: 15px; background: var(--blue); }
+    .now-playing .label { margin-bottom: 5px; }
+    .track { margin: 0; overflow-wrap: anywhere; font-size: 14px; font-weight: 700; }
+    .queue-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .queue-heading h2 { font-size: 21px; }
+    .queue-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .queue-item { padding: 11px 12px; border: 1px solid var(--line); background: white; overflow-wrap: anywhere; font-size: 13px; }
+    .empty { color: var(--muted); font-size: 14px; }
+    footer { display: flex; justify-content: space-between; gap: 16px; padding-top: 18px; color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 760px) {
+      .shell { padding: 20px 16px 32px; }
+      header { align-items: start; }
+      h1 { font-size: 32px; }
+      main { grid-template-columns: 1fr; }
+      section { padding: 20px; }
+      footer { flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      section { animation: arrive .35s ease-out both; }
+      .queue-panel { animation-delay: .08s; }
+      @keyframes arrive { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <p class="eyebrow">Classroom Music Lab</p>
+        <h1>Queue Quest</h1>
+      </div>
+      <a class="docs-link" href="/docs">API reference</a>
+    </header>
+
+    <main>
+      <section class="mission" aria-labelledby="mission-title">
+        <div class="section-label"><span class="marker" aria-hidden="true"></span><p class="label">Mission 01 · HTTP</p></div>
+        <h2 id="mission-title">Get a song into the queue.</h2>
+        <p class="intro">Find a video, identify its video ID, and send a request to the classroom player. The clues unlock one at a time.</p>
+
+        <div class="protocol-list" aria-label="Mission steps">
+          <div class="protocol"><span class="verb">GET</span><p>Look up videos and inspect the current queue.</p></div>
+          <div class="protocol"><span class="verb">POST</span><p>Submit a video request or cast a skip vote.</p></div>
+        </div>
+
+        <button id="reveal-hint" type="button">Reveal first hint</button>
+        <div class="hint-box" id="hint" aria-live="polite">
+          <p>Hints are ready when you are.</p>
+        </div>
+        <p class="status" id="hint-status" role="status"></p>
+      </section>
+
+      <section class="queue-panel" aria-labelledby="queue-title">
+        <div class="section-label"><span class="marker" aria-hidden="true"></span><p class="label">Live room</p></div>
+        <div class="status-row">
+          <h2 id="queue-title">Now playing</h2>
+          <button class="refresh" id="refresh-queue" type="button" title="Refresh queue">Refresh</button>
+        </div>
+        <div class="now-playing">
+          <p class="label">Current track</p>
+          <p class="track" id="playing">Checking player…</p>
+        </div>
+        <div class="queue-heading">
+          <h2>Up next</h2>
+          <span class="status" id="updated">Updating…</span>
+        </div>
+        <ul class="queue-list" id="queue"></ul>
+      </section>
+    </main>
+
+    <footer>
+      <span>Room status refreshes every five seconds.</span>
+      <span>Classroom server: <span id="server-address"></span></span>
+    </footer>
+  </div>
+
+  <script>
+    const hintButton = document.querySelector("#reveal-hint");
+    const hintBox = document.querySelector("#hint");
+    const hintStatus = document.querySelector("#hint-status");
+    const playing = document.querySelector("#playing");
+    const queueList = document.querySelector("#queue");
+    let hintLevel = 0;
+    let hintCount = 3;
+
+    document.querySelector("#server-address").textContent = location.origin;
+
+    async function revealHint() {
+      hintButton.disabled = true;
+      hintStatus.textContent = "Retrieving clue…";
+      try {
+        const response = await fetch(`/api/v1/hints/${hintLevel + 1}`);
+        if (!response.ok) throw new Error("Hint service unavailable");
+        const data = await response.json();
+        hintLevel = data.level;
+        hintBox.replaceChildren();
+        const count = document.createElement("span");
+        count.className = "hint-count";
+        count.textContent = `HINT ${data.level} OF ${hintCount}`;
+        const text = document.createElement("p");
+        text.textContent = data.hint;
+        hintBox.append(count, text);
+        hintStatus.textContent = "";
+        hintButton.textContent = hintLevel < hintCount ? "Reveal next hint" : "All hints revealed";
+        hintButton.disabled = hintLevel >= hintCount;
+      } catch (error) {
+        hintStatus.textContent = error.message;
+        hintButton.disabled = false;
+      }
+    }
+
+    function videoLabel(value) {
+      try {
+        const url = new URL(value);
+        return url.searchParams.get("v") || url.pathname.split("/").filter(Boolean).pop() || value;
+      } catch {
+        return value;
+      }
+    }
+
+    async function refreshQueue() {
+      try {
+        const response = await fetch("/api/v1/queue", { cache: "no-store" });
+        if (!response.ok) throw new Error("Player status unavailable");
+        const data = await response.json();
+        playing.textContent = data.playing ? videoLabel(data.playing) : "Nothing playing";
+        queueList.replaceChildren();
+        if (data.up_next.length === 0) {
+          const empty = document.createElement("li");
+          empty.className = "empty";
+          empty.textContent = "The request queue is clear.";
+          queueList.append(empty);
+        } else {
+          data.up_next.forEach((item, index) => {
+            const row = document.createElement("li");
+            row.className = "queue-item";
+            row.textContent = `${String(index + 1).padStart(2, "0")}  ${videoLabel(item)}`;
+            queueList.append(row);
+          });
+        }
+        document.querySelector("#updated").textContent = `Updated ${new Date().toLocaleTimeString()}`;
+      } catch (error) {
+        playing.textContent = error.message;
+        queueList.replaceChildren();
+      }
+    }
+
+    hintButton.addEventListener("click", revealHint);
+    document.querySelector("#refresh-queue").addEventListener("click", refreshQueue);
+    fetch("/api/v1/challenge").then(response => response.json()).then(data => {
+      hintCount = data.hint_levels;
+      hintButton.textContent = "Reveal first hint";
+    }).catch(() => {});
+    refreshQueue();
+    window.setInterval(refreshQueue, 5000);
+  </script>
+</body>
+</html>
