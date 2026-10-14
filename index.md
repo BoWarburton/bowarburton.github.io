@@ -3,6 +3,7 @@ My name is Mr. Warburton.
 ## Projects
 - [Project 1: Retro Tank Shooter](game.md)
 - Project 2: [AP Pseudocode Robot Simulator](ap-robot-simulator.html)
+- Project 3: [blnqr – a crowd-sourced sorting hat](blnqr/)
 ## About Me
 Click here to learn more → [About Me](about.md)
 

@@ -1,0 +1,57 @@
+rules_version = '2';
+
+// Security rules for blnqr. Paste into Firebase console → Firestore → Rules.
+// Everyone signs in anonymously; the host is whoever created the room.
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function room(code) { return get(/databases/$(db)/documents/rooms/$(code)).data; }
+    function isHost(code) { return signedIn() && room(code).hostUid == request.auth.uid; }
+    function proposing(code) { return room(code).phase == 'propose'; }
+    function me() { return [request.auth.uid].toSet(); }
+
+    match /rooms/{code} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.phase == 'propose'
+        && request.resource.data.categories.size() >= 2
+        && request.resource.data.categories.size() <= 8;
+      allow update: if signedIn()
+        && resource.data.hostUid == request.auth.uid
+        && request.resource.data.hostUid == resource.data.hostUid
+        && request.resource.data.phase in ['propose', 'sort'];
+
+      match /words/{wordId} {
+        allow read: if signedIn();
+
+        allow create: if signedIn() && proposing(code)
+          && request.resource.data.keys().hasOnly(['cat', 'text', 'voters', 'removed', 'by'])
+          && wordId == request.resource.data.cat + '~' + request.resource.data.text
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 24
+          && request.resource.data.voters == [request.auth.uid]
+          && request.resource.data.removed == false
+          && request.resource.data.by == request.auth.uid;
+
+        // The host can remove/restore words. Anyone else may only add or
+        // remove their own vote while proposals are open.
+        allow update: if isHost(code)
+          || (signedIn() && proposing(code)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['voters'])
+            && request.resource.data.voters.size() == request.resource.data.voters.toSet().size()
+            && (request.resource.data.voters.toSet() == resource.data.voters.toSet().union(me())
+              || request.resource.data.voters.toSet() == resource.data.voters.toSet().difference(me())));
+      }
+
+      match /players/{uid} {
+        allow read: if signedIn();
+        allow write: if signedIn() && request.auth.uid == uid
+          && request.resource.data.name is string
+          && request.resource.data.name.size() >= 1
+          && request.resource.data.name.size() <= 24;
+      }
+    }
+  }
+}

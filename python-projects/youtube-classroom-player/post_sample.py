@@ -13,3 +13,4 @@ request = Request(
 
 with urlopen(request) as response:
     print(response.read().decode())
+    # A comment written without Internet access

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>blnqr</title>
+  <meta name="description" content="A crowd-sourced sorting hat: propose words for each category, then sort yourself with rapid forced choices.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎩</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div class="demo" id="demo" hidden>
+    <b>Demo mode.</b> Rooms live only in this browser. Open another tab to play as someone else. Connect Firebase to play across devices (see README).
+  </div>
+  <div class="wrap" id="app"><p class="loading">Loading…</p></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <noscript><p class="wrap">blnqr needs JavaScript to run.</p></noscript>
+</body>
+</html>
