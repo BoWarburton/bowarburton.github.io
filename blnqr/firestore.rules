@@ -1,14 +1,18 @@
 rules_version = '2';
 
 // Security rules for blnqr. Paste into Firebase console → Firestore → Rules.
-// Everyone signs in anonymously; the host is whoever created the room.
+// Players sign in anonymously. Making and editing saved sorts needs Google sign-in.
 service cloud.firestore {
   match /databases/{db}/documents {
     function signedIn() { return request.auth != null; }
+    function isGoogle() { return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com'; }
     function room(code) { return get(/databases/$(db)/documents/rooms/$(code)).data; }
     function isHost(code) { return signedIn() && room(code).hostUid == request.auth.uid; }
     function proposing(code) { return room(code).phase == 'propose'; }
     function me() { return [request.auth.uid].toSet(); }
+    function validName(d) { return d.name is string && d.name.size() >= 1 && d.name.size() <= 24; }
+
+    /* ---------- Team rooms ---------- */
 
     match /rooms/{code} {
       allow read: if signedIn();
@@ -47,10 +51,46 @@ service cloud.firestore {
 
       match /players/{uid} {
         allow read: if signedIn();
-        allow write: if signedIn() && request.auth.uid == uid
-          && request.resource.data.name is string
-          && request.resource.data.name.size() >= 1
-          && request.resource.data.name.size() <= 24;
+        allow write: if signedIn() && request.auth.uid == uid && validName(request.resource.data);
+      }
+    }
+
+    /* ---------- Saved sorts (team templates and solo blnqrs) ---------- */
+
+    function validSort(d) {
+      return d.mode in ['team', 'solo']
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 40
+        && d.public is bool
+        && d.categories is list && d.categories.size() >= 2 && d.categories.size() <= 8;
+    }
+    function ownsSort(sortId) {
+      return isGoogle() && get(/databases/$(db)/documents/sorts/$(sortId)).data.ownerUid == request.auth.uid;
+    }
+
+    match /sorts/{sortId} {
+      allow read: if signedIn();
+      allow create: if isGoogle()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.plays == 0
+        && validSort(request.resource.data);
+      // Owners edit their sorts. Anyone may bump the play counter by exactly one.
+      allow update: if (isGoogle()
+          && resource.data.ownerUid == request.auth.uid
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.plays == resource.data.plays
+          && validSort(request.resource.data))
+        || (signedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['plays'])
+          && request.resource.data.plays == resource.data.plays + 1);
+      allow delete: if isGoogle() && resource.data.ownerUid == request.auth.uid;
+
+      // Leaderboard: one result per player per blnqr.
+      match /results/{uid} {
+        allow read: if signedIn();
+        allow create, update: if signedIn() && request.auth.uid == uid
+          && validName(request.resource.data)
+          && request.resource.data.top is string;
+        allow delete: if ownsSort(sortId);
       }
     }
   }
