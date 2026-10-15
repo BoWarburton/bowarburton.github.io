@@ -1,63 +1,73 @@
 # blnqr
 
-*Say "blinker".* A **blnqr** is a rapid run of gut-level, two-at-a-time choices. Each round flashes two words under a short timer, and you pick the one that fits a question ("Which is more you?") before you have time to think it over. Your picks add up to a profile across the categories.
+*Say "blinker".* A **blnqr** is a game made of rapid, two-at-a-time choices. Two options flash up, you pick one (often against a timer), and your picks add up to a result. It can reveal who you are, test what you know, or settle what to choose, either alone or with a group.
 
-Uses for a blnqr:
+## Game types
 
-- **Sorting hat:** which Hogwarts house, element or season are you?
-- **Ranking a list or making a decision:** make each option its own category. Your bars become your ranking, and "Everyone's average" becomes the group's.
-- **Classroom:** "Which is more Baroque?" or "Which sounds more like the Federalists?"
+| Type | Each choice | Ends when | Result |
+| --- | --- | --- | --- |
+| **You are a…** | Two items from different categories: "Which is more you?" | After N rounds | Your profile across the categories |
+| **Flashcards** | A prompt, then the right answer vs. a wrong one | Every card is done (missed cards can come back) | Score, speed, cards to review |
+| **Categorizer** | "Which is a {category}?" One item belongs, one doesn't | After N rounds | Score overall and per category |
+| **Sequencer** | "Which came first?" Your answers sort the list | Your full order is built | Your order vs. the real one |
+| **Preference sorter** | "Which do you prefer?" | Full ranking, or just the top K | Your ranking |
+| **Group pick** | Same as the preference sorter, played by a group | Everyone has weighed in | The group's ranking and how much people agreed |
+| **Decision maker** | "Which is better for {criterion}?" | Every criterion has been sorted | Weighted ranking. Players can re-slide the importance of each criterion |
 
-## Three ways in
+Every game has these settings:
+- **Who can play:** solo, groups, or both.
+- **Visibility:** **Public** (listed on the site), **Secret link** (unlisted; anyone with the link can play) or **Invite only** (only the listed Google accounts can play).
+- **Login:** whether players must sign in with Google.
+- **Wording and timing:** the question shown to players, the result heading, the timer (or none) and the length.
 
-**Team play:** live rooms with two phases.
-1. **Propose.** Players join with a 5-letter code. They add words that fit each category and tap other people's words to back them.
-2. **Sort.** When the host starts Phase 2, each player takes the rapid quiz using the room's words.
-3. **Reveal.** Each player sees their own result. The room sees how everyone sorted and the room average.
+**Group games** use a 6-letter code or link and come in two kinds, both started from any game's page:
+- **Group game (any time):** people play whenever they like, and the group's results update live.
+- **Live session:** the host runs it from the front. Players wait in a lobby, everyone's game starts at once when the host clicks **Start**, the host sees who's done and clicks **Reveal** to show everyone the group results, then can start a **New round**.
 
-A host starts a room from a saved team sort, or creates a quick one-off room.
+A Group pick can let players **add their own options** (a Setup checkbox). In a live session they add them in the lobby; in an any-time game they can add them whenever. The host can remove any added option.
 
-**Solo play:** the *Public sorts & challenges* page lists public blnqrs that anyone can take on their own. Each blnqr has a leaderboard showing:
-- how everyone who took it sorted
-- everyone's average
-- recent players
-- how many people share your result
+**Live rooms (5-letter code):** "You are a…" games can also run as a live room. Players propose and back words first, then the host starts the sort.
 
-**Setup:** sign in with Google to create and edit:
-- **blnqrs (solo):** you write the words for each category, or import the qualifying words from a team room. They can be public or unlisted, and an unlisted blnqr can still be played from its link.
-- **Team sorts:** reusable templates for live rooms (name, categories, rules).
+## Pages
 
-Both kinds let you set the question shown to players and the heading on the result.
+| URL | Page |
+| --- | --- |
+| `./` | Home: Play now, popular games, the seven types |
+| `?browse&type=…&q=…` | Browse and search public games |
+| `?g=ID` | A game: play solo, start a group, leaderboard |
+| `?s=CODE` | A group game |
+| `?join=CODE` | Join a group game or live room by code |
+| `?room=CODE` | A live room |
+| `?setup`, `?new`, `?edit=ID` | Your games, the type picker, the editor |
 
-## Moderation
+## Making games
 
-- A built-in profanity filter checks words as they're submitted, and also checks the words typed in Setup ([filter.js](filter.js)).
-- In team rooms, the host can remove or restore any word. A word only enters the quiz once enough players have backed it (1, 2 or 3; the host chooses).
+In **Setup**, sign in with Google, choose **New game**, and pick a type.
 
-## Scoring
-
-Rounds cycle through every pairing of categories, so each category appears equally often. A category's score is its win rate (times picked ÷ times shown). Scores are then normalized to sum to 100%. Timed-out pairs are skipped. Because every choice trades one category against another, the result is *ipsative*: it shows relative preference, not absolute amounts.
+Lists such as flashcards, sequence items and options are typed **one per line**, with columns separated by `|`. You can also copy rows from Google Sheets or Excel and paste them straight in, because tab-separated columns are recognized.
 
 ## Files
 
 | File | What it does |
 | --- | --- |
-| `index.html`, `styles.css` | Page shell and styling |
-| `app.js` | Home page and router (`?team`, `?play`, `?sort=ID`, `?setup`, `?edit=ID`, `?room=CODE`) |
-| `team.js` | Team play: join/host, rooms, Phase 1 board, host controls |
-| `solo.js` | Public list and playing a blnqr, with its leaderboard |
-| `setup.js` | Sign-in, your sorts, and the editor |
-| `play.js` | The rapid quiz, shared by team and solo |
-| `ui.js` | Shared helpers, presets and result markup |
-| `quiz.js` | Pure logic: word validation, pair building, scoring |
-| `filter.js` | Profanity filter |
+| `app.js` | Router |
+| `home.js` | Home page, browse and search |
+| `game.js` | Game page: solo play, leaderboard, start a group |
+| `session.js` | Group games and the join page |
+| `team.js` | Live rooms with word proposals |
+| `setup.js` | Your games, the type picker, the editor |
+| `play.js` | The two-choice runner shared by every type |
+| `types/*.js` | One file per game type: how it plays, scores, shows results, combines results, and its editor |
+| `types/kit.js` | Shared sorting (merge sort and top-K), consensus ranking, quiz rounds |
+| `types/editors.js` | Category, line and criteria editors |
+| `quiz.js`, `filter.js` | "You are a…" scoring; profanity filter |
 | `backend.js` | Data layer: Firebase, or a localStorage demo |
 | `firebase-config.js` | Your Firebase config (`null` = demo mode) |
 | `firestore.rules` | Security rules to paste into Firebase |
 
-## Running locally
+To add a game type, write a module in `types/` with the same fields as the others, then list it in `types/index.js`.
 
-ES modules don't load from `file://`, so serve the folder:
+## Running locally
 
 ```sh
 python -m http.server 8000      # from the repo root
@@ -65,21 +75,18 @@ python -m http.server 8000      # from the repo root
 ```
 
 When `firebaseConfig` is `null`, the app runs in **demo mode**:
-- Data is stored in this browser's localStorage, and each tab is a separate player.
-- "Sign in" is simulated, and every signed-in tab shares one owner account.
+- Data stays in this browser, and each tab is a separate player.
+- Sign-in is simulated, and every signed-in tab shares one owner account.
 
 ## Connecting Firebase
 
-1. Go to <https://console.firebase.google.com> and click **Add project**. Analytics isn't needed.
-2. **Build → Authentication → Sign-in method**: enable **Anonymous** (for players) and **Google** (for Setup).
-3. **Authentication → Settings → Authorized domains**: add `bowarburton.github.io`. `localhost` is already listed.
-4. **Build → Firestore Database → Create database**. Choose the Standard edition, keep the `(default)` ID, and start in production mode.
-5. **Firestore → Rules**: replace the contents with [firestore.rules](firestore.rules) and click **Publish**. Re-publish whenever this file changes.
-6. **Project settings → General → Your apps → Web (`</>`)**: register an app, then copy its `firebaseConfig` object into [firebase-config.js](firebase-config.js).
+1. Go to <https://console.firebase.google.com> and click **Add project**.
+2. **Authentication → Sign-in method**: enable **Anonymous** and **Google**.
+3. **Authentication → Settings → Authorized domains**: add `bowarburton.github.io`.
+4. **Firestore Database → Create database**. Choose the Standard edition, keep the `(default)` ID, and start in production mode.
+5. **Firestore → Rules**: paste [firestore.rules](firestore.rules) and click **Publish**. Re-publish whenever this file changes.
+6. **Project settings → Your apps → Web**: copy the `firebaseConfig` into [firebase-config.js](firebase-config.js).
 
-The web config is meant to be public. Access is controlled by the security rules. The free Spark plan covers classroom-sized use comfortably.
+## Roadmap
 
-Notes:
-
-- Each browser gets one anonymous identity. To test several players on one machine, use separate browser profiles or private windows.
-- Signing in or out of Google switches your identity. Do it before hosting a room, not partway through one.
+Plans, requirements and decisions are tracked in [ROADMAP.md](ROADMAP.md).

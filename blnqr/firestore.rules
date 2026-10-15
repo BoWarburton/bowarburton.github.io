@@ -1,7 +1,7 @@
 rules_version = '2';
 
 // Security rules for blnqr. Paste into Firebase console → Firestore → Rules.
-// Players sign in anonymously. Making and editing saved sorts needs Google sign-in.
+// Players sign in anonymously unless a game requires login. Making games needs Google sign-in.
 service cloud.firestore {
   match /databases/{db}/documents {
     function signedIn() { return request.auth != null; }
@@ -55,42 +55,90 @@ service cloud.firestore {
       }
     }
 
-    /* ---------- Saved sorts (team templates and solo blnqrs) ---------- */
+    /* ---------- Games ---------- */
 
-    function validSort(d) {
-      return d.mode in ['team', 'solo']
-        && d.name is string && d.name.size() >= 1 && d.name.size() <= 40
-        && d.public is bool
-        && d.categories is list && d.categories.size() >= 2 && d.categories.size() <= 8;
+    function game(gameId) { return get(/databases/$(db)/documents/games/$(gameId)).data; }
+    // Invite-only games are visible to their owner and the invited Google accounts.
+    function canSee(g) {
+      return g.visibility != 'invite' || g.ownerUid == request.auth.uid
+        || (isGoogle() && request.auth.token.email.lower() in g.invites);
     }
-    function ownsSort(sortId) {
-      return isGoogle() && get(/databases/$(db)/documents/sorts/$(sortId)).data.ownerUid == request.auth.uid;
+    function canPlay(g) { return signedIn() && canSee(g) && (!g.loginRequired || isGoogle()); }
+    function validGame(d) {
+      return d.type in ['persona', 'flashcard', 'categorizer', 'sequencer', 'preference', 'group', 'decision']
+        && d.title is string && d.title.size() >= 1 && d.title.size() <= 60
+        && d.visibility in ['public', 'link', 'invite']
+        && d.invites is list && d.invites.size() <= 500
+        && d.loginRequired is bool && (d.visibility != 'invite' || d.loginRequired)
+        && d.solo is bool && d.group is bool
+        && d.content is map;
     }
 
-    match /sorts/{sortId} {
-      allow read: if signedIn();
+    match /games/{gameId} {
+      // Opening a game by its id works for public and secret-link games; listing
+      // only ever shows public games (or your own).
+      allow get: if signedIn() && (resource == null || canSee(resource.data));
+      allow list: if signedIn() && (resource.data.visibility == 'public' || resource.data.ownerUid == request.auth.uid);
       allow create: if isGoogle()
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.plays == 0
-        && validSort(request.resource.data);
-      // Owners edit their sorts. Anyone may bump the play counter by exactly one.
+        && validGame(request.resource.data);
+      // Owners edit their games. Players may bump the play counter by exactly one.
       allow update: if (isGoogle()
           && resource.data.ownerUid == request.auth.uid
           && request.resource.data.ownerUid == resource.data.ownerUid
           && request.resource.data.plays == resource.data.plays
-          && validSort(request.resource.data))
-        || (signedIn()
+          && validGame(request.resource.data))
+        || (canPlay(resource.data)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['plays'])
           && request.resource.data.plays == resource.data.plays + 1);
       allow delete: if isGoogle() && resource.data.ownerUid == request.auth.uid;
 
-      // Leaderboard: one result per player per blnqr.
+      // Solo results: one per player per game.
       match /results/{uid} {
+        allow read: if signedIn() && canSee(game(gameId));
+        allow create, update: if request.auth.uid == uid && canPlay(game(gameId))
+          && validName(request.resource.data) && request.resource.data.summary is map;
+        allow delete: if isGoogle() && game(gameId).ownerUid == request.auth.uid;
+      }
+    }
+
+    /* ---------- Group sessions (6-letter code): any-time or live ---------- */
+
+    match /sessions/{code} {
+      function session() { return get(/databases/$(db)/documents/sessions/$(code)).data; }
+      function member() { return exists(/databases/$(db)/documents/sessions/$(code)/players/$(request.auth.uid)); }
+
+      allow read: if signedIn();
+      allow create: if request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.live is bool
+        && canPlay(game(request.resource.data.gameId))
+        && game(request.resource.data.gameId).group == true;
+      // Only the host runs a live session: phase (lobby → play → reveal) and round.
+      allow update: if signedIn() && resource.data.hostUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phase', 'round'])
+        && request.resource.data.phase in ['lobby', 'play', 'reveal'];
+      allow delete: if false;
+
+      match /players/{uid} {
         allow read: if signedIn();
-        allow create, update: if signedIn() && request.auth.uid == uid
-          && validName(request.resource.data)
-          && request.resource.data.top is string;
-        allow delete: if ownsSort(sortId);
+        allow write: if request.auth.uid == uid && validName(request.resource.data)
+          && canPlay(game(session().gameId));
+      }
+
+      // Options players add to a Group pick, if its creator allows it. In a live
+      // session they can only be added in the lobby. Authors and the host can remove them.
+      match /options/{key} {
+        allow read: if signedIn();
+        allow create: if signedIn() && member()
+          && game(session().gameId).allowAdd == true
+          && (!session().live || session().phase == 'lobby')
+          && request.resource.data.keys().hasOnly(['text', 'by'])
+          && request.resource.data.by == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 80;
+        allow delete: if signedIn()
+          && (resource.data.by == request.auth.uid || session().hostUid == request.auth.uid);
       }
     }
   }

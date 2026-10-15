@@ -1,11 +1,12 @@
-// Team play: live rooms where everyone proposes words, then sorts themselves.
+// Live rooms for "You are a…" games: everyone proposes words, then sorts themselves.
 import { backend } from './backend.js';
-import { WORD_MAX, normalizeWord, validWord, qualifiedWords, buildRounds, scoreRounds } from './quiz.js';
+import { WORD_MAX, normalizeWord, validWord, qualifiedWords } from './quiz.js';
 import { isBlocked } from './filter.js';
-import { introHTML, runQuiz } from './play.js';
+import { introHTML, runGame } from './play.js';
+import persona from './types/persona.js';
 import {
-  $, app, esc, listOf, loadingHTML, toast, guard, go, onLeave, getName, rememberName, askHostName,
-  settingsFields, resultCard, tallyBars, averageBars,
+  $, app, esc, listOf, loadingHTML, toast, guard, go, onLeave, askHostName,
+  DEFAULTS, settingsFields, resultCard, tallyBars, averageBars,
 } from './ui.js';
 
 // Room state, kept in sync by the backend watchers.
@@ -14,72 +15,19 @@ const isHost = () => S.room?.hostUid === backend.uid;
 const me = () => S.players.find(p => p.id === backend.uid);
 const catById = id => S.room.categories.find(c => c.id === id);
 
-/* ---------- Join / host ---------- */
-
-export async function renderTeam(code = '') {
-  app.innerHTML = `
-    <a class="back" href="./" data-link>← Home</a>
-    <header class="page-head">
-      <h1>Team play</h1>
-      <p class="lede">Everyone in the room proposes words for each category together, then sorts themselves in a rapid-fire round.</p>
-    </header>
-    <div class="split">
-      <form class="card" id="join">
-        <h2>Join a room</h2>
-        <label>Room code<input name="code" class="code-input" required minlength="5" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" value="${esc(code)}"></label>
-        <label>Your name<input name="name" required maxlength="24" autocomplete="nickname" value="${esc(getName())}"></label>
-        <button class="btn">Join</button>
-      </form>
-      <div class="card host-card">
-        <h2>Host a room</h2>
-        <div id="my-team-sorts"></div>
-        <a class="btn ghost" href="?edit=quick" data-link>Quick one-off room →</a>
-      </div>
-    </div>`;
-
-  $('#join').addEventListener('submit', guard(async e => {
-    e.preventDefault();
-    const f = new FormData(e.target);
-    const code = f.get('code').trim().toUpperCase(), name = f.get('name').trim();
-    if (!name) return toast('Enter your name');
-    if (!(await backend.getRoom(code))) return toast(`No room with code ${code}`);
-    rememberName(name);
-    await backend.joinRoom(code, name);
-    go(`?room=${code}`);
-  }));
-  $(code ? '#join [name=name]' : '#join [name=code]').focus();
-
-  const box = $('#my-team-sorts');
-  if (!backend.user.google) {
-    box.innerHTML = '<p><a href="?setup" data-link>Sign in to Setup</a> to save team sorts you can reuse, or start a one-off room.</p>';
-    return;
-  }
-  box.innerHTML = loadingHTML;
-  const sorts = (await backend.listMySorts()).filter(s => s.mode === 'team').sort((a, b) => b.updated - a.updated);
-  if (!box.isConnected) return;
-  box.innerHTML = sorts.length
-    ? `<p>Start a room from one of your team sorts:</p><ul class="pick">${sorts.map(s => `
-        <li><span>${esc(s.name)}</span><button class="btn small" data-start="${s.id}">Start room</button></li>`).join('')}</ul>`
-    : '<p>You have no saved team sorts yet. <a href="?edit=new&mode=team" data-link>Create one in Setup</a>, or start a one-off room.</p>';
-  box.onclick = guard(async e => {
-    const s = sorts.find(s => s.id === e.target.dataset.start);
-    if (s) await startRoomFrom(s);
-  });
-}
-
-// Creates a live room from a saved (or unsaved) sort and takes the host into it.
-export async function startRoomFrom(sort) {
+// Creates a live room from a "You are a…" game: players propose the words live.
+export async function startRoomFrom(game) {
   const name = askHostName();
   if (!name) return;
   const code = await backend.createRoom({
-    name: sort.name,
-    categories: sort.categories.map(({ id, name, color }) => ({ id, name, color })),
-    minVotes: sort.minVotes,
-    rounds: sort.rounds,
-    seconds: sort.seconds,
-    question: sort.question || '',
-    verdict: sort.verdict || '',
-    ...(sort.id ? { sortId: sort.id } : {}),
+    name: game.title,
+    categories: game.content.categories.map(({ id, name, color }) => ({ id, name, color })),
+    minVotes: DEFAULTS.minVotes,
+    rounds: game.rounds || DEFAULTS.rounds,
+    seconds: game.seconds ?? DEFAULTS.seconds,
+    question: game.question || '',
+    verdict: game.verdict || '',
+    gameId: game.id,
   });
   await backend.joinRoom(code, name);
   go(`?room=${code}`);
@@ -92,9 +40,8 @@ export async function openRoom(code) {
   app.innerHTML = loadingHTML;
   const [room, player] = await Promise.all([backend.getRoom(code), backend.getPlayer(code)]);
   if (room && player) return enterRoom(code);
-  history.replaceState(null, '', '?team');
-  renderTeam(room ? code : '');
   if (!room) toast(`No room with code ${code}`);
+  go(room ? `?join=${code}` : '?join', true);
 }
 
 function enterRoom(code) {
@@ -131,10 +78,10 @@ function renderRoom(view) {
         <p class="eyebrow">Room <b class="code">${r.code}</b> · ${view === 'propose' ? 'Phase 1: Propose' : 'Phase 2: Sort'}</p>
         <h1>${esc(r.name)}</h1>
       </div>
-      <a class="btn ghost small" href="?team" data-link>Leave</a>
+      <a class="btn ghost small" href="./" data-link>Leave</a>
     </header>
     ${isHost() ? hostPanel() : ''}
-    <main id="phase">${view === 'propose' ? proposeView() : view === 'intro' ? introHTML(r.rounds, r.seconds, r.question) : resultView()}</main>`;
+    <main id="phase">${view === 'propose' ? proposeView() : view === 'intro' ? introHTML(roomGame(), persona) : resultView()}</main>`;
 
   if (isHost()) wireHost();
   const phase = $('#phase');
@@ -142,6 +89,7 @@ function renderRoom(view) {
     phase.addEventListener('submit', guard(onPropose));
     phase.addEventListener('click', guard(onBoardClick));
   } else if (view === 'intro') {
+    $('.intro-actions').innerHTML = '<button class="btn big" id="begin">I’m ready</button>';
     $('#begin').onclick = startQuiz;
   } else {
     $('#retake').onclick = () => { S.retake = true; refresh(); };
@@ -262,14 +210,23 @@ function paintBoard() {
 
 /* ---------- Phase 2: sort ---------- */
 
+// The room as a playable "You are a…" game, using the words that qualified.
+function roomGame() {
+  const r = S.room, byCat = qualifiedWords(S.words, r.categories, r.minVotes);
+  return {
+    ...r, title: r.name,
+    question: r.question || persona.defaults.question,
+    content: { categories: r.categories.map(c => ({ ...c, items: byCat[c.id] })) },
+  };
+}
+
 async function startQuiz() {
-  const r = S.room;
-  const rounds = buildRounds(qualifiedWords(S.words, r.categories, r.minVotes), r.rounds);
-  if (!rounds.length) return toast('There are not enough words to sort with yet');
+  const game = roomGame();
+  if (persona.ready(game)) return toast('There are not enough words to sort with yet');
   S.quiz = true;
   try {
-    const answers = await runQuiz($('#phase'), rounds, r.seconds, r.question);
-    if (answers) await backend.saveResult(S.code, scoreRounds(rounds, answers, r.categories));
+    const summary = await runGame($('#phase'), game, persona);
+    if (summary) await backend.saveRoomResult(S.code, summary);
   } catch (err) {
     console.error(err);
     toast("Couldn't save your result. Try sorting again.");
@@ -284,6 +241,7 @@ async function startQuiz() {
 function resultView() {
   return `
     ${resultCard(me().result, S.room.categories, S.room.verdict)}
+    <div class="result-actions"><button class="btn ghost small" id="retake">Sort again</button></div>
     <section class="card group">
       <h2>How the room sorted</h2>
       <p class="meta" id="gmeta"></p>

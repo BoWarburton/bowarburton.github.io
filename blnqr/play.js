@@ -1,34 +1,36 @@
-// The rapid forced-choice quiz, shared by team rooms and solo sorts.
+// The rapid two-choice runner every game type plays through.
 import { $, esc, sleep } from './ui.js';
 
-export const DEFAULT_QUESTION = 'Which is more you?';
+class Left extends Error {}
 
-export function introHTML(rounds, seconds, question, extra = '') {
+export function introHTML(game, type, extra = '') {
+  const n = type.estimate(game), timed = game.seconds > 0;
+  const approx = ['sequencer', 'preference', 'group', 'decision'].includes(type.id);
   return `
     <section class="card intro">
       <h2>Ready?</h2>
-      <p class="question">${esc(question || DEFAULT_QUESTION)}</p>
-      <p>Two words will flash up with that question. Go with your gut: you have ${seconds} seconds, and if time runs out the pair is skipped.</p>
+      ${game.question && !game.question.includes('{') ? `<p class="question">${esc(game.question)}</p>` : ''}
+      <p>Two choices at a time. ${timed ? `Go with your gut: you have ${game.seconds} seconds for each.` : 'Take your time, though your first instinct is usually right.'}</p>
       <ul class="keys">
-        <li><kbd>←</kbd> or <kbd>F</kbd> picks the left word</li>
-        <li><kbd>→</kbd> or <kbd>J</kbd> picks the right word</li>
-        <li>On a phone or tablet, tap the word</li>
+        <li><kbd>←</kbd> or <kbd>F</kbd> picks the left one</li>
+        <li><kbd>→</kbd> or <kbd>J</kbd> picks the right one</li>
+        <li>On a phone or tablet, just tap</li>
       </ul>
-      <p class="meta">${rounds} choices · under ${Math.ceil((rounds * (seconds + 0.3) + 2) / 60)} min</p>
+      ${n ? `<p class="meta">${approx ? 'Up to ' : ''}${n} choices${timed ? ` · under ${Math.max(1, Math.ceil((n * (game.seconds + 0.4) + 2) / 60))} min` : ''}</p>` : ''}
       ${extra}
-      <button class="btn big" id="begin">I'm ready</button>
+      <div class="intro-actions"></div>
     </section>`;
 }
 
-// Runs the quiz inside `el`. Resolves with one answer per round, or null if the
+// Plays a game inside `el`. Resolves with the type's summary, or null if the
 // player navigated away part-way through.
-export async function runQuiz(el, rounds, seconds, question) {
+export async function runGame(el, game, type) {
   document.body.classList.add('quizzing');
   el.innerHTML = `
     <section class="quiz">
       <div class="quiz-top"><span id="qn"></span><span class="hint"><kbd>F</kbd> <kbd>←</kbd> &nbsp;or&nbsp; <kbd>→</kbd> <kbd>J</kbd></span></div>
-      <p class="question">${esc(question || DEFAULT_QUESTION)}</p>
-      <div class="timer"><span id="tbar"></span></div>
+      <p class="question" id="qprompt"></p>
+      <div class="timer${game.seconds > 0 ? '' : ' off'}"><span id="tbar"></span></div>
       <div class="pair blank" id="pair">
         <button class="opt" id="optL"></button>
         <span class="or">or</span>
@@ -36,37 +38,49 @@ export async function runQuiz(el, rounds, seconds, question) {
       </div>
       <p class="flash" id="flash" aria-live="polite"></p>
     </section>`;
+
+  const check = () => { if (!el.isConnected) throw new Left(); };
+  const ask = async ({ prompt, left, right, correct, n, total, approx }) => {
+    check();
+    $('#qn').textContent = total ? `${n} of ${approx ? 'up to ' : ''}${total}` : `${n}`;
+    $('#qprompt').textContent = prompt || game.question || type.defaults.question;
+    const res = await askPair(left.text, right.text, game.seconds * 1000, game.feedback === false ? null : correct);
+    await sleep(180);
+    check();
+    return res;
+  };
+
   try {
     for (const n of ['3', '2', '1']) {
       $('#flash').textContent = n;
       await sleep(600);
-      if (!el.isConnected) return null;
+      check();
     }
-    const answers = [];
-    for (let i = 0; i < rounds.length; i++) {
-      answers.push(await ask(rounds[i], i, rounds.length, seconds * 1000));
-      await sleep(200);
-      if (!el.isConnected) return null;
-    }
-    return answers;
+    $('#flash').textContent = '';
+    return await type.play(game, ask);
+  } catch (err) {
+    if (err instanceof Left) return null;
+    throw err;
   } finally {
     document.body.classList.remove('quizzing');
   }
 }
 
 // Shows one pair and resolves with { pick: 'left' | 'right' | null, ms }.
-function ask(round, i, n, limit) {
+// With `correct`, briefly shows whether the pick was right.
+function askPair(leftText, rightText, limit, correct) {
   const pair = $('#pair'), L = $('#optL'), R = $('#optR'), bar = $('#tbar'), flash = $('#flash');
-  L.textContent = round.left.text;
-  R.textContent = round.right.text;
-  $('#qn').textContent = `${i + 1} / ${n}`;
+  L.textContent = leftText;
+  R.textContent = rightText;
   flash.textContent = '';
   pair.classList.remove('blank');
-  bar.style.transition = 'none';
-  bar.style.transform = 'scaleX(1)';
-  bar.getBoundingClientRect();
-  bar.style.transition = `transform ${limit}ms linear`;
-  bar.style.transform = 'scaleX(0)';
+  if (limit) {
+    bar.style.transition = 'none';
+    bar.style.transform = 'scaleX(1)';
+    bar.getBoundingClientRect();
+    bar.style.transition = `transform ${limit}ms linear`;
+    bar.style.transform = 'scaleX(0)';
+  }
   const t0 = performance.now();
 
   return new Promise(resolve => {
@@ -78,16 +92,25 @@ function ask(round, i, n, limit) {
       clearTimeout(timer);
       removeEventListener('keydown', onKey);
       L.onclick = R.onclick = null;
-      bar.style.transform = getComputedStyle(bar).transform;
-      bar.style.transition = 'none';
-      if (pick) (pick === 'left' ? L : R).classList.add('picked');
-      else flash.textContent = 'Too slow, skipped';
+      if (limit) {
+        bar.style.transform = getComputedStyle(bar).transform;
+        bar.style.transition = 'none';
+      }
+      const btn = side => (side === 'left' ? L : R);
+      let hold = 160;
+      if (correct) {
+        btn(correct).classList.add('right');
+        if (pick && pick !== correct) btn(pick).classList.add('wrong');
+        hold = pick === correct ? 300 : 900;
+      } else if (pick) {
+        btn(pick).classList.add('picked');
+      }
+      if (!pick) { flash.textContent = 'Too slow'; hold = Math.max(hold, 700); }
       setTimeout(() => {
-        L.classList.remove('picked');
-        R.classList.remove('picked');
+        [L, R].forEach(b => b.classList.remove('picked', 'right', 'wrong'));
         pair.classList.add('blank');
         resolve({ pick, ms });
-      }, pick ? 160 : 600);
+      }, hold);
     };
     const onKey = e => {
       if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -95,7 +118,7 @@ function ask(round, i, n, limit) {
       if (k === 'arrowleft' || k === 'f') { e.preventDefault(); finish('left'); }
       else if (k === 'arrowright' || k === 'j') { e.preventDefault(); finish('right'); }
     };
-    const timer = setTimeout(() => finish(null), limit);
+    const timer = limit ? setTimeout(() => finish(null), limit) : null;
     addEventListener('keydown', onKey);
     L.onclick = () => finish('left');
     R.onclick = () => finish('right');

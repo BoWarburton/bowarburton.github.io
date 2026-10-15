@@ -1,18 +1,15 @@
 // Shared UI helpers, constants and navigation used by every page.
 
 export const PALETTE = ['#dc2626', '#ca8a04', '#2563eb', '#16a34a', '#9333ea', '#ea580c', '#0891b2', '#db2777'];
-export const PRESETS = [
-  { name: 'Hogwarts Houses', cats: [['Gryffindor', '#b91c1c'], ['Hufflepuff', '#ca8a04'], ['Ravenclaw', '#1d4ed8'], ['Slytherin', '#15803d']] },
-  { name: 'Classical Elements', cats: [['Fire', '#dc2626'], ['Water', '#0284c7'], ['Earth', '#65a30d'], ['Air', '#8b9bb4']] },
-  { name: 'Seasons', cats: [['Spring', '#16a34a'], ['Summer', '#eab308'], ['Autumn', '#ea580c'], ['Winter', '#0ea5e9']] },
-];
 export const DEFAULTS = { minVotes: 2, rounds: 30, seconds: 2.5 };
-const OPTIONS = {
+export const OPTIONS = {
   minVotes: [[1, 'Just 1 (anything goes)'], [2, '2 people'], [3, '3 people']],
-  rounds: [[20, '20 (quick)'], [30, '30'], [40, '40 (thorough)']],
-  seconds: [[1.5, '1.5 s (pure gut)'], [2.5, '2.5 s'], [4, '4 s (relaxed)']],
+  rounds: [[10, '10 (quick)'], [20, '20'], [30, '30'], [40, '40 (thorough)']],
+  seconds: [[0, 'No timer'], [1.5, '1.5 s (pure gut)'], [2.5, '2.5 s'], [4, '4 s'], [8, '8 s (relaxed)']],
+  cards: [[0, 'All cards'], [10, '10'], [20, '20'], [30, '30']],
+  topK: [[0, 'Full ranking'], [1, 'Just the winner'], [3, 'Top 3'], [5, 'Top 5'], [10, 'Top 10']],
 };
-const LABELS = { minVotes: 'Backers a word needs', rounds: 'Choices per player', seconds: 'Time per choice' };
+const LABELS = { minVotes: 'Backers a word needs', rounds: 'Choices per player', seconds: 'Time per choice', cards: 'Cards per play', topK: 'How much to rank' };
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const app = $('#app');
@@ -78,10 +75,10 @@ export function leavePage() {
 
 /* Shared markup */
 
-export function settingsFields(values, keys = Object.keys(OPTIONS)) {
+export function settingsFields(values, keys = ['minVotes', 'rounds', 'seconds']) {
   return keys.map(k => `
-    <label${k === 'minVotes' ? ' class="team-only"' : ''}>${LABELS[k]}<select name="${k}">${OPTIONS[k]
-      .map(([v, text]) => `<option value="${v}"${+values[k] === v ? ' selected' : ''}>${text}</option>`).join('')}</select></label>`).join('');
+    <label${k === 'minVotes' ? ' class="team-only"' : ''}>${LABELS[k]}<select name="${k === 'cards' ? 'rounds' : k}">${OPTIONS[k]
+      .map(([v, text]) => `<option value="${v}"${+values[k === 'cards' ? 'rounds' : k] === v ? ' selected' : ''}>${text}</option>`).join('')}</select></label>`).join('');
 }
 
 export function bars(items, max) {
@@ -96,7 +93,7 @@ export function bars(items, max) {
 export const swatches = cats =>
   `<ul class="swatches">${cats.map(c => `<li style="--c:${c.color}">${esc(c.name)}</li>`).join('')}</ul>`;
 
-// The personal result card. Includes a #retake button.
+// The personal result card for "You are a…" games.
 export const DEFAULT_VERDICT = 'You sorted into';
 
 export function resultCard(res, categories, verdict) {
@@ -111,7 +108,6 @@ export function resultCard(res, categories, verdict) {
       ${bars(ranked.map(c => ({ label: c.name, color: c.color, value: score(c), text: `${Math.round(score(c))}%` })), Math.max(...ranked.map(score)))}
       ${res.tells?.length ? `<p class="tells">Words that gave you away: ${res.tells.map(t => `<b style="--c:${cat(t.cat)?.color}">${esc(t.text)}</b>`).join(' ')}</p>` : ''}
       <p class="meta">${res.answered} of ${res.answered + res.skipped} answered · ${res.avgMs} ms per choice on average</p>
-      <button class="btn ghost small" id="retake">Sort again</button>
     </section>`;
 }
 
