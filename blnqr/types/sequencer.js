@@ -4,6 +4,27 @@ import { esc } from '../ui.js';
 import { shuffle, mergeSort, sortCost, comparer, pairAgreement, mean, pct, leaderboard } from './kit.js';
 import { linesEditor } from './editors.js';
 
+const PRESETS = [
+  { name: 'Big Events of the 20th Century',
+    description: 'From the first airplane to the fall of the Berlin Wall. Two events at a time: which happened first? Your answers put the whole century in order.',
+    question: 'Which happened first?',
+    verdict: 'Your timeline',
+    rows: [
+      ['The Wright brothers make the first powered airplane flight', '1903'],
+      ['World War I begins', '1914'],
+      ['The Russian Revolution', '1917'],
+      ['US women win the right to vote (19th Amendment)', '1920'],
+      ['The stock market crash starts the Great Depression', '1929'],
+      ['World War II begins in Europe', '1939'],
+      ['World War II ends', '1945'],
+      ['Brown v. Board of Education ends school segregation', '1954'],
+      ['The Soviet Union launches Sputnik', '1957'],
+      ['Apollo 11 astronauts walk on the Moon', '1969'],
+      ['The Berlin Wall falls', '1989'],
+      ['Nelson Mandela is elected president of South Africa', '1994'],
+    ] },
+];
+
 export default {
   id: 'sequencer',
   label: 'Sequencer',
@@ -55,6 +76,7 @@ export default {
       label: 'Items, in the correct order',
       hint: 'first to last, one per line. Optionally add | a label to reveal at the end, such as a date.',
       placeholder: 'Declaration of Independence | 1776\nUS Constitution signed | 1787\nLouisiana Purchase | 1803',
+      presets: PRESETS,
     });
     return {
       html: lines.html,

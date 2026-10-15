@@ -15,6 +15,33 @@ export function clean(raw, max) {
   return text;
 }
 
+/* ---------- Presets ---------- */
+
+const presetButtons = presets => presets.length
+  ? `<div class="presets"><span>Start from</span>${presets.map((p, i) => `<button type="button" class="pill" data-preset="${i}">${esc(p.name)}</button>`).join('')}</div>`
+  : '';
+
+// Fills in a preset's title, wording and settings wherever the creator hasn't typed their own.
+function applyPreset(root, p) {
+  const fill = (name, value) => {
+    const field = root.querySelector(`[name=${name}]`);
+    if (field && value && (!field.value || field.value === field.placeholder || field.dataset.preset === 'y')) {
+      field.value = value;
+      field.dataset.preset = 'y';
+    }
+  };
+  fill('title', p.name);
+  fill('description', p.description);
+  fill('question', p.question);
+  fill('verdict', p.verdict);
+  for (const [name, value] of Object.entries(p.settings || {})) {
+    const field = root.querySelector(`[name=${name}]`);
+    if (!field) continue;
+    if (field.type === 'checkbox') field.checked = !!value;
+    else field.value = String(value);
+  }
+}
+
 /* ---------- Categories, each with a list of items ---------- */
 
 export function categoryEditor(initial, { presets = [], itemsHint = 'one per line, or separated by commas' } = {}) {
@@ -26,7 +53,7 @@ export function categoryEditor(initial, { presets = [], itemsHint = 'one per lin
   let root;
 
   const html = `
-    ${presets.length ? `<div class="presets"><span>Start from</span>${presets.map((p, i) => `<button type="button" class="pill" data-preset="${i}">${esc(p.name)}</button>`).join('')}</div>` : ''}
+    ${presetButtons(presets)}
     <fieldset>
       <legend>Categories <small>2 to 8, each with its items (${esc(itemsHint)})</small></legend>
       <div class="cat-edit" data-cats></div>
@@ -76,24 +103,7 @@ export function categoryEditor(initial, { presets = [], itemsHint = 'one per lin
       const p = presets[e.target.dataset.preset];
       if (!p) return;
       cats = p.cats.map(([name, color, list], i) => blank(i, name, color, list || []));
-      // Fill in the preset's title and wording wherever the creator hasn't typed their own.
-      const fill = (name, value) => {
-        const field = root.querySelector(`[name=${name}]`);
-        if (field && value && (!field.value || field.value === field.placeholder || field.dataset.preset === 'y')) {
-          field.value = value;
-          field.dataset.preset = 'y';
-        }
-      };
-      fill('title', p.name);
-      fill('description', p.description);
-      fill('question', p.question);
-      fill('verdict', p.verdict);
-      for (const [name, value] of Object.entries(p.settings || {})) {
-        const field = root.querySelector(`[name=${name}]`);
-        if (!field) continue;
-        if (field.type === 'checkbox') field.checked = !!value;
-        else field.value = String(value);
-      }
+      applyPreset(root, p);
       draw();
     });
     draw();
@@ -117,9 +127,11 @@ export function categoryEditor(initial, { presets = [], itemsHint = 'one per lin
 /* ---------- A table typed (or pasted from a spreadsheet) one row per line ---------- */
 
 // Columns are separated by | or a tab, so rows copied from Google Sheets or Excel paste straight in.
-export function linesEditor(rows, { label, hint, placeholder, minCols = 1, maxLen = 80, unique = true }) {
+// Presets here are { name, rows: [[col, col…]], description?, question?, verdict?, settings? }.
+export function linesEditor(rows, { label, hint, placeholder, minCols = 1, maxLen = 80, unique = true, presets = [] }) {
   let root;
   const html = `
+    ${presetButtons(presets)}
     <label>${esc(label)} <small>${esc(hint)}</small>
       <textarea class="lines" data-lines rows="9" placeholder="${esc(placeholder)}">${esc((rows || []).map(r => r.filter(Boolean).join(' | ')).join('\n'))}</textarea>
     </label>
@@ -136,6 +148,13 @@ export function linesEditor(rows, { label, hint, placeholder, minCols = 1, maxLe
   function wire(el) {
     root = el;
     $('[data-lines]', root).addEventListener('input', count);
+    root.addEventListener('click', e => {
+      const p = presets[e.target.dataset.preset];
+      if (!p) return;
+      $('[data-lines]', root).value = p.rows.map(r => r.filter(Boolean).join(' | ')).join('\n');
+      applyPreset(root, p);
+      count();
+    });
     count();
   }
 

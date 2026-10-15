@@ -45,6 +45,7 @@ Status key: ✅ done · 🚧 in progress · ⏳ planned · 💭 idea / later
 - ✅ **Categorizer: ask about only the first category** (the other categories supply the wrong answers), e.g. "Which is a mammal?" every round.
 - ✅ **Read questions aloud** (browser speech) for early readers.
 - ✅ Preset: **Which Is a Mammal?** for ages 6–8: 10 mammals vs. 10 birds, reptiles, amphibians and insects, with pictures, read-aloud and an 8-second timer.
+- ✅ Preset: **Big Events of the 20th Century** (Sequencer): 12 events from 1903 to 1994, with the years revealed at the end. Line-based editors now support presets too.
 
 - ⏳ **Photos.**
   - Decided: in solo play, photos stay on the device and are never uploaded.
