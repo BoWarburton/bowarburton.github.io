@@ -410,3 +410,15 @@ body.quizzing .page-head, body.quizzing .back, body.quizzing .leaderboard, body.
 .options-panel .chip.mine { --c: var(--accent); }
 .waiting-card { text-align: center; }
 body.quizzing #host-panel, body.quizzing #options-panel { display: none; }
+
+/* Pictures */
+.pair.pics .opt { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px; }
+.opt img { width: min(100%, 220px); aspect-ratio: 1; height: auto; pointer-events: none; }
+.opt .cap { font-size: clamp(1.1rem, 3.5vw, 1.6rem); text-transform: capitalize; }
+.pair.blank .opt img { visibility: hidden; }
+.missed .thumb { width: 44px; height: 44px; vertical-align: middle; margin-right: 8px; }
+@media (max-width: 520px) {
+  .pair.pics { gap: 6px; }
+  .pair.pics .opt { padding: 8px 4px; }
+  .pair.pics .or { font-size: .8rem; }
+}

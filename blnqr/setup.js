@@ -144,6 +144,9 @@ export async function renderEditor(param, typeParam) {
         <div class="settings">${settingsFields(game, ['seconds', 'rounds', 'cards', 'topK'].filter(has))}</div>
         ${has('feedback') ? `<label class="check"><input type="checkbox" name="feedback"${game.feedback !== false ? ' checked' : ''}> Show right and wrong answers as they play</label>` : ''}
         ${has('repeat') ? `<label class="check"><input type="checkbox" name="repeat"${game.repeat ? ' checked' : ''}> Bring missed cards back at the end</label>` : ''}
+        ${has('askFirst') ? `<label class="check"><input type="checkbox" name="askFirst"${game.askFirst ? ' checked' : ''}> Only ask about the first category (the others are just wrong answers)</label>` : ''}
+        <label class="check"><input type="checkbox" name="pictures"${game.pictures ? ' checked' : ''}> Show pictures from the built-in library when a name matches (lion, frog, bee…)</label>
+        <label class="check"><input type="checkbox" name="speak"${game.speak ? ' checked' : ''}> Read each question aloud (for early readers)</label>
         ${has('addOptions') ? `<label class="check"><input type="checkbox" name="allowAdd"${game.allowAdd ? ' checked' : ''}> Players can add their own options in group games</label>` : ''}
       </fieldset>
 
@@ -215,6 +218,9 @@ export async function renderEditor(param, typeParam) {
       feedback: has('feedback') ? f.get('feedback') === 'on' : true,
       repeat: has('repeat') ? f.get('repeat') === 'on' : false,
       allowAdd: has('addOptions') && f.get('allowAdd') === 'on',
+      askFirst: has('askFirst') && f.get('askFirst') === 'on',
+      pictures: f.get('pictures') === 'on',
+      speak: f.get('speak') === 'on',
     };
     const id = await backend.saveGame(isNew ? null : game.id, data);
     toast('Saved');

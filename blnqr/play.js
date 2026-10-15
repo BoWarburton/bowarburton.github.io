@@ -1,5 +1,6 @@
 // The rapid two-choice runner every game type plays through.
 import { $, esc, sleep } from './ui.js';
+import { pictureFor } from './pictures/index.js';
 
 class Left extends Error {}
 
@@ -40,11 +41,15 @@ export async function runGame(el, game, type) {
     </section>`;
 
   const check = () => { if (!el.isConnected) throw new Left(); };
+  let spoken = '';
   const ask = async ({ prompt, left, right, correct, n, total, approx }) => {
     check();
+    const question = prompt || game.question || type.defaults.question;
     $('#qn').textContent = total ? `${n} of ${approx ? 'up to ' : ''}${total}` : `${n}`;
-    $('#qprompt').textContent = prompt || game.question || type.defaults.question;
-    const res = await askPair(left.text, right.text, game.seconds * 1000, game.feedback === false ? null : correct);
+    $('#qprompt').textContent = question;
+    // Read the question aloud for early readers, whenever it changes.
+    if (game.speak && question !== spoken) { say(question); spoken = question; }
+    const res = await askPair(left.text, right.text, game.seconds * 1000, game.feedback === false ? null : correct, game.pictures);
     await sleep(180);
     check();
     return res;
@@ -66,12 +71,26 @@ export async function runGame(el, game, type) {
   }
 }
 
+function say(text) {
+  try {
+    speechSynthesis.cancel();
+    speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance(text), { rate: 0.9 }));
+  } catch {}
+}
+
+// An option's contents: its picture (if pictures are on and one matches) and its name.
+export function optionHTML(text, pictures) {
+  const pic = pictures && pictureFor(text);
+  return pic ? `<img src="${pic}" alt=""><span class="cap">${esc(text)}</span>` : esc(text);
+}
+
 // Shows one pair and resolves with { pick: 'left' | 'right' | null, ms }.
 // With `correct`, briefly shows whether the pick was right.
-function askPair(leftText, rightText, limit, correct) {
+function askPair(leftText, rightText, limit, correct, pictures) {
   const pair = $('#pair'), L = $('#optL'), R = $('#optR'), bar = $('#tbar'), flash = $('#flash');
-  L.textContent = leftText;
-  R.textContent = rightText;
+  L.innerHTML = optionHTML(leftText, pictures);
+  R.innerHTML = optionHTML(rightText, pictures);
+  pair.classList.toggle('pics', !!(pictures && (pictureFor(leftText) || pictureFor(rightText))));
   flash.textContent = '';
   pair.classList.remove('blank');
   if (limit) {

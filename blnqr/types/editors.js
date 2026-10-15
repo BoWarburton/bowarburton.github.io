@@ -88,6 +88,12 @@ export function categoryEditor(initial, { presets = [], itemsHint = 'one per lin
       fill('description', p.description);
       fill('question', p.question);
       fill('verdict', p.verdict);
+      for (const [name, value] of Object.entries(p.settings || {})) {
+        const field = root.querySelector(`[name=${name}]`);
+        if (!field) continue;
+        if (field.type === 'checkbox') field.checked = !!value;
+        else field.value = String(value);
+      }
       draw();
     });
     draw();

@@ -2,7 +2,21 @@
 import { shuffle, pickOne, fill, quizRounds, scoreHTML, quizBoard, bars, pct } from './kit.js';
 import { categoryEditor } from './editors.js';
 
+const MAMMALS = ['elephant', 'giraffe', 'lion', 'rabbit', 'monkey', 'pig', 'bear', 'dolphin', 'bat', 'kangaroo'];
+
 const PRESETS = [
+  { name: 'Which Is a Mammal?',
+    description: 'For ages 6 to 8. Two animals pop up: tap the mammal! Watch out for tricky ones.',
+    question: 'Which is a mammal?',
+    verdict: 'Mammals found',
+    settings: { seconds: 8, rounds: 10, feedback: true, askFirst: true, pictures: true, speak: true },
+    cats: [
+      ['mammal', '#ea580c', MAMMALS],
+      ['bird', '#2563eb', ['owl', 'penguin', 'parrot']],
+      ['reptile', '#16a34a', ['turtle', 'snake', 'lizard']],
+      ['amphibian', '#0891b2', ['frog', 'salamander']],
+      ['insect', '#9333ea', ['butterfly', 'bee']],
+    ] },
   { name: 'Animal classes', cats: [
     ['mammal', '#a16207', ['dolphin', 'bat', 'whale', 'horse', 'mouse']],
     ['reptile', '#15803d', ['snake', 'lizard', 'turtle', 'crocodile', 'gecko']],
@@ -24,7 +38,7 @@ export default {
   example: 'Mammal or reptile? Noun or verb?',
   color: '#16a34a',
   defaults: { question: 'Which is a {category}?', verdict: 'Your score', seconds: 2.5, rounds: 20, feedback: true, solo: true, group: true },
-  options: ['seconds', 'rounds', 'feedback'],
+  options: ['seconds', 'rounds', 'feedback', 'askFirst'],
 
   ready: g => {
     const cats = g.content?.categories || [];
@@ -39,7 +53,7 @@ export default {
     const rounds = [];
     let targets = [], tries = 0;
     while (rounds.length < game.rounds && tries++ < game.rounds * 4) {
-      if (!targets.length) targets = shuffle([...cats]);
+      if (!targets.length) targets = game.askFirst ? [cats[0]] : shuffle([...cats]);
       const target = targets.pop();
       const outside = cats.filter(c => c !== target).flatMap(c => c.items).filter(i => !target.items.includes(i));
       if (!outside.length) continue;

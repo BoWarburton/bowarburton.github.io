@@ -1,6 +1,7 @@
 // Building blocks shared by the game types: sorting by comparisons, consensus
 // rankings, quiz rounds, and the markup for scores and leaderboards.
 import { esc, bars } from '../ui.js';
+import { pictureFor } from '../pictures/index.js';
 
 export function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -135,7 +136,7 @@ export function scoreHTML(game, s, extra = '') {
         <h3>To review</h3>
         <ul class="missed">${s.missed.map(m => `
           <li>${m.prompt ? `<span class="q">${esc(m.prompt)}</span>` : ''}
-            <b>${esc(m.answer)}</b>${m.chose ? ` <span class="meta">(you chose ${esc(m.chose)})</span>` : ' <span class="meta">(too slow)</span>'}</li>`).join('')}
+            ${game.pictures && pictureFor(m.answer) ? `<img class="thumb" src="${pictureFor(m.answer)}" alt="">` : ''}<b>${esc(m.answer)}</b>${m.chose ? ` <span class="meta">(you chose ${esc(m.chose)})</span>` : ' <span class="meta">(too slow)</span>'}</li>`).join('')}
         </ul>` : '<p class="tells">A perfect run!</p>'}
     </section>`;
 }

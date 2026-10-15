@@ -41,6 +41,11 @@ Status key: ✅ done · 🚧 in progress · ⏳ planned · 💭 idea / later
 
 ## Stage 3: Media, data, new modes ⏳
 
+- ✅ **Built-in picture library** (`pictures/`): 20 animals drawn as flat vector SVGs in one shared style. Any game can show a picture next to an item whose name matches one in the library. More can be added with `pictures/make_animals.py`.
+- ✅ **Categorizer: ask about only the first category** (the other categories supply the wrong answers), e.g. "Which is a mammal?" every round.
+- ✅ **Read questions aloud** (browser speech) for early readers.
+- ✅ Preset: **Which Is a Mammal?** for ages 6–8: 10 mammals vs. 10 birds, reptiles, amphibians and insects, with pictures, read-aloud and an 8-second timer.
+
 - ⏳ **Photos.**
   - Decided: in solo play, photos stay on the device and are never uploaded.
   - Decided: in group play, photos are shrunk to about 100 KB thumbnails and stored in Firestore, so the free plan still works.
