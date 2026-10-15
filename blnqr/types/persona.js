@@ -4,12 +4,16 @@ import { esc, resultCard, tallyBars, averageBars } from '../ui.js';
 import { categoryEditor } from './editors.js';
 
 const PRESETS = [
-  { name: 'Hogwarts Houses', cats: [
-    ['Gryffindor', '#b91c1c', ['brave', 'daring', 'bold', 'chivalrous', 'reckless']],
-    ['Hufflepuff', '#ca8a04', ['loyal', 'patient', 'kind', 'hardworking', 'fair']],
-    ['Ravenclaw', '#1d4ed8', ['curious', 'witty', 'wise', 'creative', 'clever']],
-    ['Slytherin', '#15803d', ['ambitious', 'cunning', 'resourceful', 'proud', 'determined']],
-  ] },
+  { name: 'Which Hogwarts House Are You?',
+    description: 'The Sorting Hat has no time to waste. Two words flash up: pick the one that is more you, fast, and find out where you belong.',
+    question: 'Which is more you?',
+    verdict: 'The Sorting Hat says',
+    cats: [
+      ['Gryffindor', '#b91c1c', ['brave', 'daring', 'bold', 'courageous', 'adventurous', 'fearless', 'heroic', 'chivalrous', 'hot-headed', 'reckless']],
+      ['Hufflepuff', '#ca8a04', ['loyal', 'patient', 'kind', 'hardworking', 'fair', 'friendly', 'honest', 'humble', 'dependable', 'generous']],
+      ['Ravenclaw', '#1d4ed8', ['curious', 'witty', 'wise', 'creative', 'clever', 'original', 'thoughtful', 'imaginative', 'logical', 'bookish']],
+      ['Slytherin', '#15803d', ['ambitious', 'cunning', 'resourceful', 'proud', 'determined', 'competitive', 'strategic', 'persuasive', 'driven', 'sly']],
+    ] },
   { name: 'Your element', cats: [
     ['Fire', '#dc2626', ['passionate', 'energetic', 'impulsive', 'fierce']],
     ['Water', '#0284c7', ['calm', 'intuitive', 'adaptable', 'deep']],

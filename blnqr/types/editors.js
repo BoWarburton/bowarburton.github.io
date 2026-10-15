@@ -76,7 +76,18 @@ export function categoryEditor(initial, { presets = [], itemsHint = 'one per lin
       const p = presets[e.target.dataset.preset];
       if (!p) return;
       cats = p.cats.map(([name, color, list], i) => blank(i, name, color, list || []));
-      if (!root.querySelector('[name=title]').value) root.querySelector('[name=title]').value = p.name;
+      // Fill in the preset's title and wording wherever the creator hasn't typed their own.
+      const fill = (name, value) => {
+        const field = root.querySelector(`[name=${name}]`);
+        if (field && value && (!field.value || field.value === field.placeholder || field.dataset.preset === 'y')) {
+          field.value = value;
+          field.dataset.preset = 'y';
+        }
+      };
+      fill('title', p.name);
+      fill('description', p.description);
+      fill('question', p.question);
+      fill('verdict', p.verdict);
       draw();
     });
     draw();
