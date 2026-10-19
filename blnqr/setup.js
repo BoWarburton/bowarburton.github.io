@@ -2,6 +2,7 @@
 import { backend, isDemo } from './backend.js';
 import { TYPES, typeOf } from './types/index.js';
 import { clean } from './types/editors.js';
+import { PACKS, packGame } from './types/packs.js';
 import { $, app, esc, loadingHTML, toast, guard, go, settingsFields } from './ui.js';
 
 const shareLink = id => `${location.origin}${location.pathname}?g=${id}`;
@@ -40,7 +41,37 @@ export async function renderSetup() {
 
   body.innerHTML = `
     <div class="new-row"><a class="btn" href="?new" data-link>+ New game</a></div>
-    <div id="my-games" class="my-sorts">${loadingHTML}</div>`;
+    <div id="my-games" class="my-sorts">${loadingHTML}</div>
+    <section class="packs">
+      <h2>Starter packs</h2>
+      <p class="meta">Add a ready-made set of games to your account in one click. You can edit any of them afterwards.</p>
+      <div class="pack-grid">${PACKS.map(p => `
+        <article class="card pack" data-pack="${p.id}">
+          <h3>${esc(p.name)}</h3>
+          <p>${esc(p.blurb)}</p>
+          <p class="meta">${p.games().map(g => esc(g.title)).join(' · ')}</p>
+          <div class="pack-actions">
+            <select aria-label="Who can find these games">
+              <option value="link" selected>Secret link (class only)</option>
+              <option value="public">Public (listed on the site)</option>
+            </select>
+            <button class="btn small" data-add-pack="${p.id}">Add these games</button>
+          </div>
+        </article>`).join('')}
+      </div>
+    </section>`;
+
+  $('.pack-grid').addEventListener('click', guard(async e => {
+    const id = e.target.dataset.addPack, pack = PACKS.find(p => p.id === id);
+    if (!pack) return;
+    e.target.disabled = true;
+    const visibility = e.target.closest('.pack').querySelector('select').value;
+    const have = new Set((await backend.listMyGames()).map(g => g.title.toLowerCase()));
+    const fresh = pack.games().filter(g => !have.has(g.title.toLowerCase()));
+    for (const g of fresh) await backend.saveGame(null, packGame(g, visibility));
+    toast(fresh.length ? `Added ${fresh.length} ${fresh.length === 1 ? 'game' : 'games'}` : 'You already have all of these');
+    renderSetup();
+  }));
 
   const games = (await backend.listMyGames()).sort((a, b) => b.updated - a.updated);
   const list = $('#my-games');
@@ -141,7 +172,7 @@ export async function renderEditor(param, typeParam) {
 
       <fieldset>
         <legend>Play</legend>
-        <div class="settings">${settingsFields(game, ['seconds', 'rounds', 'cards', 'topK'].filter(has))}</div>
+        <div class="settings">${settingsFields(game, ['seconds', 'rounds', 'cards', 'topK', 'flash'].filter(has))}</div>
         ${has('feedback') ? `<label class="check"><input type="checkbox" name="feedback"${game.feedback !== false ? ' checked' : ''}> Show right and wrong answers as they play</label>` : ''}
         ${has('repeat') ? `<label class="check"><input type="checkbox" name="repeat"${game.repeat ? ' checked' : ''}> Bring missed cards back at the end</label>` : ''}
         ${has('askFirst') ? `<label class="check"><input type="checkbox" name="askFirst"${game.askFirst ? ' checked' : ''}> Only ask about the first category (the others are just wrong answers)</label>` : ''}
@@ -215,6 +246,7 @@ export async function renderEditor(param, typeParam) {
       seconds: +(f.get('seconds') ?? game.seconds ?? 0),
       rounds: +(f.get('rounds') ?? game.rounds ?? 0),
       topK: +(f.get('topK') ?? game.topK ?? 0),
+      flash: +(f.get('flash') ?? game.flash ?? 0),
       feedback: has('feedback') ? f.get('feedback') === 'on' : true,
       repeat: has('repeat') ? f.get('repeat') === 'on' : false,
       allowAdd: has('addOptions') && f.get('allowAdd') === 'on',

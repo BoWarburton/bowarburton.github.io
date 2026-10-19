@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Join a blnqr game</title>
+  <!-- Short join address for blnqr: /j?CODE (or just /j) goes to the join page. -->
+  <script>
+    var code = (location.search.slice(1) || location.hash.slice(1)).replace(/[^a-z0-9]/gi, '').toUpperCase();
+    location.replace('../blnqr/?join' + (code ? '=' + code : ''));
+  </script>
+</head>
+<body><p><a href="../blnqr/?join">Join a blnqr game</a></p></body>
+</html>

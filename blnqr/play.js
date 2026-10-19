@@ -1,6 +1,6 @@
 // The rapid two-choice runner every game type plays through.
 import { $, esc, sleep } from './ui.js';
-import { pictureFor } from './pictures/index.js';
+import { pictureFor, hasCaption } from './pictures/index.js';
 
 class Left extends Error {}
 
@@ -31,6 +31,7 @@ export async function runGame(el, game, type) {
     <section class="quiz">
       <div class="quiz-top"><span id="qn"></span><span class="hint"><kbd>F</kbd> <kbd>←</kbd> &nbsp;or&nbsp; <kbd>→</kbd> <kbd>J</kbd></span></div>
       <p class="question" id="qprompt"></p>
+      <div class="qpic" id="qpic" hidden></div>
       <div class="timer${game.seconds > 0 ? '' : ' off'}"><span id="tbar"></span></div>
       <div class="pair blank" id="pair">
         <button class="opt" id="optL"></button>
@@ -41,12 +42,22 @@ export async function runGame(el, game, type) {
     </section>`;
 
   const check = () => { if (!el.isConnected) throw new Left(); };
-  let spoken = '';
+  let spoken = '', hideTimer;
   const ask = async ({ prompt, left, right, correct, n, total, approx }) => {
     check();
-    const question = prompt || game.question || type.defaults.question;
+    // A prompt that names a library picture is shown as that picture (e.g. a dot card),
+    // optionally only for a moment, so players recognize it at a glance.
+    const promptPic = game.pictures && prompt && pictureFor(prompt);
+    const question = promptPic ? game.question || 'Which one?' : prompt || game.question || type.defaults.question;
     $('#qn').textContent = total ? `${n} of ${approx ? 'up to ' : ''}${total}` : `${n}`;
     $('#qprompt').textContent = question;
+    const qpic = $('#qpic');
+    clearTimeout(hideTimer);
+    qpic.hidden = !promptPic;
+    if (promptPic) {
+      qpic.innerHTML = `<img src="${promptPic}" alt="">`;
+      if (game.flash > 0) hideTimer = setTimeout(() => { qpic.innerHTML = '<span class="gone">?</span>'; }, game.flash * 1000);
+    }
     // Read the question aloud for early readers, whenever it changes.
     if (game.speak && question !== spoken) { say(question); spoken = question; }
     const res = await askPair(left.text, right.text, game.seconds * 1000, game.feedback === false ? null : correct, game.pictures);
@@ -81,7 +92,7 @@ function say(text) {
 // An option's contents: its picture (if pictures are on and one matches) and its name.
 export function optionHTML(text, pictures) {
   const pic = pictures && pictureFor(text);
-  return pic ? `<img src="${pic}" alt=""><span class="cap">${esc(text)}</span>` : esc(text);
+  return pic ? `<img src="${pic}" alt="">${hasCaption(text) ? `<span class="cap">${esc(text)}</span>` : ''}` : esc(text);
 }
 
 // Shows one pair and resolves with { pick: 'left' | 'right' | null, ms }.
@@ -91,6 +102,8 @@ function askPair(leftText, rightText, limit, correct, pictures) {
   L.innerHTML = optionHTML(leftText, pictures);
   R.innerHTML = optionHTML(rightText, pictures);
   pair.classList.toggle('pics', !!(pictures && (pictureFor(leftText) || pictureFor(rightText))));
+  // Short answers (numbers, single words) get extra-large type for young players.
+  pair.classList.toggle('short', leftText.length <= 4 && rightText.length <= 4);
   flash.textContent = '';
   pair.classList.remove('blank');
   if (limit) {

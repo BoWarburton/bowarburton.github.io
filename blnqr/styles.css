@@ -422,3 +422,31 @@ body.quizzing #host-panel, body.quizzing #options-panel { display: none; }
   .pair.pics .opt { padding: 8px 4px; }
   .pair.pics .or { font-size: .8rem; }
 }
+
+/* Big join card for projectors */
+.join-big { display: grid; grid-template-columns: 1fr auto; gap: 8px 28px; align-items: end; margin-bottom: 20px; }
+.join-step .eyebrow { margin: 0; font-size: .95rem; }
+.join-url { margin: 0; font: 800 clamp(1.5rem, 4.5vw, 2.6rem)/1.15 var(--display); color: var(--accent); overflow-wrap: anywhere; }
+.join-big .big-code { margin: 0; font-size: clamp(2.4rem, 8vw, 4rem); }
+.join-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.join-foot .meta { margin: 0; }
+@media (max-width: 560px) { .join-big { grid-template-columns: 1fr; } }
+.host .host-share .join-big { margin: 0; padding: 0; border: 0; box-shadow: none; background: none; grid-template-columns: 1fr; }
+body.quizzing .join-big { display: none; }
+
+/* Picture prompts (e.g. dot cards for subitizing) */
+.qpic { display: grid; place-items: center; margin: 0 auto 14px; width: min(46vw, 220px); aspect-ratio: 1; }
+.qpic img { width: 100%; height: 100%; }
+.qpic .gone { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 24px; border: 4px dashed var(--line); font: 800 4rem var(--display); color: var(--muted); }
+.quiz:has(.qpic:not([hidden])) .opt { min-height: clamp(90px, 18vh, 160px); font-size: clamp(2rem, 8vw, 3.4rem); }
+
+/* Starter packs */
+.packs { margin-top: 32px; }
+.packs h2 { margin-bottom: .2em; }
+.pack-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); margin-top: 12px; }
+.pack h3 { font: 700 1.15rem var(--display); margin: 0 0 6px; }
+.pack p { margin: 0 0 8px; }
+.pack-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pack-actions select { width: auto; flex: 1; }
+.qpic[hidden] { display: none; }
+.pair.short .opt { font-size: clamp(2.6rem, 11vw, 4.6rem); }

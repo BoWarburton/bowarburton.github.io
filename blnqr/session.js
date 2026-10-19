@@ -6,7 +6,7 @@ import { backend } from './backend.js';
 import { introHTML, runGame } from './play.js';
 import { loadGame, loginGate, wireLoginGate, gameHeader } from './game.js';
 import { clean } from './types/editors.js';
-import { $, app, esc, loadingHTML, toast, guard, go, onLeave, getName, rememberName } from './ui.js';
+import { $, app, esc, loadingHTML, toast, guard, go, onLeave, getName, rememberName, joinCard } from './ui.js';
 
 // 6-letter codes are group sessions; 5-letter codes are live word-proposal rooms.
 export function renderJoin(code = '') {
@@ -71,7 +71,6 @@ export async function renderSession(code) {
   const me = () => S.members.find(m => m.id === backend.uid) || member;
   const inRound = m => m.summary && (!live() || (m.round || 1) === round());
   const myResult = () => (inRound(me()) ? me().summary : null);
-  const link = `${location.origin}${location.pathname}?join=${code}`;
 
   // The game as played in this session: its own options plus any players added.
   const baseItems = () => game.content.items || [];
@@ -85,13 +84,7 @@ export async function renderSession(code) {
   app.innerHTML = `
     <a class="back" href="./" data-link>← Home</a>
     ${gameHeader(game, type, live() ? ' · Live session' : ' · Group game')}
-    <section class="card share">
-      <div><p class="eyebrow">${live() ? 'Join at this page with the code' : 'Invite people with the code'}</p><p class="big-code">${code}</p></div>
-      <div class="share-actions">
-        <button class="btn ghost small" id="copy">Copy invite link</button>
-        <p class="meta">${live() ? 'Everyone starts together when the host says go.' : 'They can play any time, and results update live.'}</p>
-      </div>
-    </section>
+    ${joinCard(code, live() ? 'Everyone starts together when the host says go.' : 'They can play any time, and results update live.')}
     <div id="host-panel"></div>
     <div id="options-panel"></div>
     <main id="play"></main>
@@ -101,10 +94,6 @@ export async function renderSession(code) {
       <p class="meta" id="waiting"></p>
     </section>`;
 
-  $('#copy').onclick = async () => {
-    try { await navigator.clipboard.writeText(link); toast('Invite link copied'); }
-    catch { prompt('Copy this link:', link); }
-  };
 
   /* ---------- Host controls (live sessions) ---------- */
 

@@ -36,6 +36,11 @@ Status key: ✅ done · 🚧 in progress · ⏳ planned · 💭 idea / later
   - Results build up live, and the host reveals the group results.
   - The host can play along and start new rounds; results are kept per round.
   - Decided: **live session**, not lockstep Kahoot-style.
+- ✅ **Short join address** `bowarburton.github.io/j` (the `/j` folder at the site root redirects to the join page, and `/j?CODE` fills in the code), shown on a big projector-friendly join card for live sessions and live rooms.
+- 💭 A QR code on the join card for phones and tablets.
+- ⏳ **Custom domain** (the user will connect one later). The join card works out its address from the current domain, so it will show e.g. `newdomain/j` automatically. When connecting it:
+  - Add the domain under Firebase **Authentication → Settings → Authorized domains**, or Google sign-in will fail there.
+  - GitHub Pages applies a custom domain to the whole site, including the portfolio.
 - ✅ **Players can add options**, a yes/no setup option on Group pick. In a live session players add options in the lobby; in any-time group games they can add them whenever. The host can remove any added option.
   - 💭 Later: make adding a permissioned action (e.g. only some players), and/or limit how many options each player can add.
 
@@ -46,6 +51,12 @@ Status key: ✅ done · 🚧 in progress · ⏳ planned · 💭 idea / later
 - ✅ **Read questions aloud** (browser speech) for early readers.
 - ✅ Preset: **Which Is a Mammal?** for ages 6–8: 10 mammals vs. 10 birds, reptiles, amphibians and insects, with pictures, read-aloud and an 8-second timer.
 - ✅ Preset: **Big Events of the 20th Century** (Sequencer): 12 events from 1903 to 1994, with the years revealed at the end. Line-based editors now support presets too.
+- ✅ **Starter packs** in Setup add a ready-made set of games in one click, as Secret link or Public, skipping any the account already has:
+  - **Times tables:** "Multiples of 2" through "Multiples of 9" (Categorizer). Wrong answers are near misses, e.g. 20 or 22 for multiples of 3.
+  - **Subitizing:** "Quick Dots (1 to 6)" and "Ten-Frame Flash (1 to 10)" (Flashcards).
+- ✅ **Picture prompts:** a flashcard prompt that names a library picture is shown as that picture, optionally only briefly ("Show picture prompts for ½–2 seconds"), so players recognize it at a glance instead of counting.
+- ✅ **Dot-card pictures** (`pictures/dots/`, made by `make_dots.py`): dice and scattered patterns for 1–6, and ten-frames for 1–10. Library entries can hide their caption so the name doesn't give the answer away.
+- ✅ Short answers (numbers) are shown extra large for young players.
 
 - ⏳ **Photos.**
   - Decided: in solo play, photos stay on the device and are never uploaded.

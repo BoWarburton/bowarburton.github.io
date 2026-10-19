@@ -135,7 +135,7 @@ export function scoreHTML(game, s, extra = '') {
       ${s.missed.length ? `
         <h3>To review</h3>
         <ul class="missed">${s.missed.map(m => `
-          <li>${m.prompt ? `<span class="q">${esc(m.prompt)}</span>` : ''}
+          <li>${m.prompt ? (game.pictures && pictureFor(m.prompt) ? `<img class="thumb" src="${pictureFor(m.prompt)}" alt="">` : `<span class="q">${esc(m.prompt)}</span>`) : ''}
             ${game.pictures && pictureFor(m.answer) ? `<img class="thumb" src="${pictureFor(m.answer)}" alt="">` : ''}<b>${esc(m.answer)}</b>${m.chose ? ` <span class="meta">(you chose ${esc(m.chose)})</span>` : ' <span class="meta">(too slow)</span>'}</li>`).join('')}
         </ul>` : '<p class="tells">A perfect run!</p>'}
     </section>`;

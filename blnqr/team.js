@@ -6,7 +6,7 @@ import { introHTML, runGame } from './play.js';
 import persona from './types/persona.js';
 import {
   $, app, esc, listOf, loadingHTML, toast, guard, go, onLeave, askHostName,
-  DEFAULTS, settingsFields, resultCard, tallyBars, averageBars,
+  DEFAULTS, settingsFields, resultCard, tallyBars, averageBars, joinCard,
 } from './ui.js';
 
 // Room state, kept in sync by the backend watchers.
@@ -100,11 +100,7 @@ function hostPanel() {
   const r = S.room;
   return `
     <section class="card host">
-      <div class="host-share">
-        <p class="eyebrow">You're hosting. Players join with</p>
-        <p class="big-code">${r.code}</p>
-        <button class="link" id="copy">Copy invite link</button>
-      </div>
+      <div class="host-share">${joinCard(r.code)}</div>
       <div class="host-ctl">
         ${r.phase === 'propose' ? `
           <form id="settings" class="settings">${settingsFields(r)}</form>
@@ -117,11 +113,6 @@ function hostPanel() {
 }
 
 function wireHost() {
-  const link = `${location.origin}${location.pathname}?room=${S.code}`;
-  $('#copy').onclick = async () => {
-    try { await navigator.clipboard.writeText(link); toast('Invite link copied'); }
-    catch { prompt('Copy this link:', link); }
-  };
   $('#settings')?.addEventListener('change', guard(e => backend.updateRoom(S.code, { [e.target.name]: +e.target.value })));
   $('#go-sort')?.addEventListener('click', guard(() => backend.updateRoom(S.code, { phase: 'sort' })));
   $('#go-propose')?.addEventListener('click', guard(() => backend.updateRoom(S.code, { phase: 'propose' })));

@@ -8,8 +8,9 @@ export const OPTIONS = {
   seconds: [[0, 'No timer'], [1.5, '1.5 s (pure gut)'], [2.5, '2.5 s'], [4, '4 s'], [8, '8 s (relaxed)']],
   cards: [[0, 'All cards'], [10, '10'], [20, '20'], [30, '30']],
   topK: [[0, 'Full ranking'], [1, 'Just the winner'], [3, 'Top 3'], [5, 'Top 5'], [10, 'Top 10']],
+  flash: [[0, 'The whole time'], [0.5, '½ second'], [1, '1 second'], [1.5, '1½ seconds'], [2, '2 seconds']],
 };
-const LABELS = { minVotes: 'Backers a word needs', rounds: 'Choices per player', seconds: 'Time per choice', cards: 'Cards per play', topK: 'How much to rank' };
+const LABELS = { minVotes: 'Backers a word needs', rounds: 'Choices per player', seconds: 'Time per choice', cards: 'Cards per play', topK: 'How much to rank', flash: 'Show picture prompts for' };
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const app = $('#app');
@@ -72,6 +73,37 @@ export function leavePage() {
   while (cleanups.length) cleanups.pop()();
   document.body.classList.remove('quizzing');
 }
+
+/* Joining by code */
+
+// The short join address: the /j page beside the blnqr folder (e.g. bowarburton.github.io/j).
+export function joinAddress(code) {
+  const root = location.pathname.replace(/blnqr\/.*$/, '');
+  const short = `${location.host}${root}j`;
+  return { short, link: `${location.protocol}//${short}?${code}` };
+}
+
+// A projector-friendly card: where to go, and the code to type.
+export function joinCard(code, note = '') {
+  const { short } = joinAddress(code);
+  return `
+    <section class="card join-big">
+      <div class="join-step"><p class="eyebrow">1. Go to</p><p class="join-url">${esc(short)}</p></div>
+      <div class="join-step"><p class="eyebrow">2. Enter the code</p><p class="big-code">${esc(code)}</p></div>
+      <div class="join-foot">
+        <button class="btn ghost small" data-copy-join="${esc(code)}">Copy invite link</button>
+        ${note ? `<p class="meta">${note}</p>` : ''}
+      </div>
+    </section>`;
+}
+
+document.addEventListener('click', async e => {
+  const code = e.target.closest('[data-copy-join]')?.dataset.copyJoin;
+  if (!code) return;
+  const { link } = joinAddress(code);
+  try { await navigator.clipboard.writeText(link); toast('Invite link copied'); }
+  catch { prompt('Copy this link:', link); }
+});
 
 /* Shared markup */
 

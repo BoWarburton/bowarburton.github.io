@@ -1,6 +1,7 @@
 // 2. Flashcards: a prompt, then the right answer against a wrong one.
 import { shuffle, pickOne, quizRounds, scoreHTML, quizBoard } from './kit.js';
 import { linesEditor } from './editors.js';
+import { SUBITIZING } from './packs.js';
 
 // Wrong answers come from the card itself, or else from other cards' answers.
 const wrongsFor = (card, cards) => card.wrong?.length ? card.wrong
@@ -13,7 +14,7 @@ export default {
   example: 'Spanish vocab, state capitals, times tables',
   color: '#0891b2',
   defaults: { question: '', verdict: 'Your score', seconds: 4, rounds: 0, feedback: true, repeat: true, solo: true, group: true },
-  options: ['seconds', 'cards', 'feedback', 'repeat'],
+  options: ['seconds', 'cards', 'flash', 'feedback', 'repeat'],
 
   ready: g => {
     const cards = g.content?.cards || [];
@@ -38,6 +39,7 @@ export default {
       placeholder: 'perro | dog | cat | horse\ngato | cat\n7 × 8 | 56 | 54 | 48',
       minCols: 2,
       maxLen: 120,
+      presets: SUBITIZING,
     });
     return {
       html: lines.html,
