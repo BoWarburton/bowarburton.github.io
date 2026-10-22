@@ -65,7 +65,7 @@ Lists such as flashcards, sequence items and options are typed **one per line**,
 | `firebase-config.js` | Your Firebase config (`null` = demo mode) |
 | `firestore.rules` | Security rules to paste into Firebase |
 
-To add a game type, write a module in `types/` with the same fields as the others, then list it in `types/index.js`.
+To add a game type, write a module in `types/` with the same fields as the others, then list it in `types/index.js`. Also add its id to the type list in `validGame()` in [firestore.rules](firestore.rules) and re-publish the rules, or saving a game of the new type will be refused.
 
 ## Running locally
 
